@@ -1,58 +1,102 @@
 from django.contrib import admin
-from .models import Politician, ResearchResult
+from .models import Politician, ResearchResult, Chat, Message
 
 @admin.register(Politician)
 class PoliticianAdmin(admin.ModelAdmin):
     list_display = ('name', 'position', 'created_at')
     search_fields = ('name', 'position')
-    list_filter = ('position', 'created_at')
-    date_hierarchy = 'created_at'
+    ordering = ('name',)
     
-    # Show research results in the politician detail view
-    readonly_fields = ('research_count',)
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.select_related()
+        return queryset
     
-    def research_count(self, obj):
-        return obj.research_results.count()
-    research_count.short_description = 'Number of research results'
+    def has_research(self, obj):
+        return obj.research_results.exists()
+    has_research.boolean = True
+    
+    def latest_research_date(self, obj):
+        latest = obj.get_latest_research()
+        return latest.created_at if latest else None
+    latest_research_date.short_description = 'Latest Research'
+
+
+class ResearchInline(admin.TabularInline):
+    model = ResearchResult
+    fields = ('created_at', 'updated_at')
+    readonly_fields = ('created_at', 'updated_at')
+    extra = 0
+    max_num = 5
+    can_delete = False
+    show_change_link = True
 
 
 @admin.register(ResearchResult)
 class ResearchResultAdmin(admin.ModelAdmin):
-    list_display = ('politician', 'created_at', 'updated_at', 'has_background', 'has_accomplishments', 'has_criticisms', 'has_summary')
+    list_display = ('politician', 'created_at', 'updated_at')
     list_filter = ('created_at', 'updated_at')
-    search_fields = ('politician__name', 'background', 'accomplishments', 'criticisms', 'summary')
+    search_fields = ('politician__name', 'summary')
     readonly_fields = ('created_at', 'updated_at')
-    date_hierarchy = 'created_at'
     fieldsets = (
-        ('Politician', {
-            'fields': ('politician',)
+        (None, {
+            'fields': ('politician', 'created_at', 'updated_at')
         }),
         ('Research Data', {
             'fields': ('background', 'accomplishments', 'criticisms', 'summary'),
+            'classes': ('collapse',),
         }),
-        ('Metadata', {
-            'fields': ('sources', 'created_at', 'updated_at'),
-            'classes': ('collapse',)
+        ('Sources', {
+            'fields': ('sources',),
+            'classes': ('collapse',),
         }),
     )
     
-    # Custom admin methods to show if content exists
-    def has_background(self, obj):
-        return bool(obj.background)
-    has_background.boolean = True  # Display as icon
-    has_background.short_description = 'Background'
-    
-    def has_accomplishments(self, obj):
-        return bool(obj.accomplishments)
-    has_accomplishments.boolean = True
-    has_accomplishments.short_description = 'Accomplishments'
-    
-    def has_criticisms(self, obj):
-        return bool(obj.criticisms)
-    has_criticisms.boolean = True
-    has_criticisms.short_description = 'Criticisms'
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.select_related('politician')
+        return queryset
 
-    def has_summary(self, obj):
-        return bool(obj.summary)
-    has_summary.boolean = True
-    has_summary.short_description = 'Summary'
+class MessageInline(admin.TabularInline):
+    model = Message
+    fields = ('content', 'role', 'timestamp')
+    readonly_fields = ('timestamp',)
+    extra = 0
+    max_num = 10
+    can_delete = True
+    ordering = ('timestamp',)
+
+
+@admin.register(Chat)
+class ChatAdmin(admin.ModelAdmin):
+    list_display = ('title', 'user', 'created_at', 'updated_at', 'message_count')
+    list_filter = ('created_at', 'updated_at')
+    search_fields = ('title', 'user__username', 'user__email')
+    readonly_fields = ('created_at', 'updated_at')
+    inlines = [MessageInline]
+    
+    def message_count(self, obj):
+        return obj.messages.count()
+    message_count.short_description = 'Messages'
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.select_related('user')
+        return queryset
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('chat', 'role', 'content_preview', 'timestamp')
+    list_filter = ('role', 'timestamp')
+    search_fields = ('content', 'chat__title')
+    readonly_fields = ('timestamp',)
+    
+    def content_preview(self, obj):
+        return obj.content[:50] + ('...' if len(obj.content) > 50 else '')
+    content_preview.short_description = 'Content'
+    
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        queryset = queryset.select_related('chat')
+        return queryset

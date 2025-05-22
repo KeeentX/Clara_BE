@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 class Politician(models.Model):
     """
@@ -52,3 +53,44 @@ class ResearchResult(models.Model):
     def is_recent(self, days=7):
         """Check if this research is recent (within the specified number of days)"""
         return (timezone.now() - self.created_at).days <= days
+
+class Chat(models.Model):
+    """
+    Stores a conversation between a user and the assistant.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chats')
+    title = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', '-updated_at']),
+        ]
+        ordering = ['-updated_at']
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+
+class Message(models.Model):
+    """
+    Stores individual messages within a chat.
+    """
+    ROLE_CHOICES = [
+        ('user', 'User'),
+        ('assistant', 'Assistant'),
+    ]
+
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
+    content = models.TextField()
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['chat', 'timestamp']),
+        ]
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.role} message in {self.chat.title} ({self.timestamp.strftime('%Y-%m-%d %H:%M')})"

@@ -1,15 +1,19 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from .models import Politician, ResearchResult
+from .models import Politician, ResearchResult, Chat, Message
 from .services.pipeline_service import ResearchPipeline
-from .serializers import PoliticianSerializer, ResearchResultSerializer
+from .serializers import PoliticianSerializer, ResearchResultSerializer, ChatListSerializer, ChatDetailSerializer, MessageSerializer
 from django.utils import timezone
 from datetime import timedelta
 import json
 import logging
+from rest_framework import status
+from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticated
+import uuid
 
 # Set up logger
 logger = logging.getLogger("Research View")
@@ -146,3 +150,96 @@ def research_politician(request, name):
             'name': normalized_name,
             'position': position
         }, status=500)
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def chat_list(request):
+    """
+    List all chats for the authenticated user or create a new chat
+    """
+    if request.method == 'GET':
+        chats = Chat.objects.filter(user=request.user)
+        serializer = ChatListSerializer(chats, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        # Create a new chat
+        data = {
+            'title': request.data.get('title', 'New Conversation'),
+            'user': request.user.id
+        }
+        serializer = ChatListSerializer(data=data)
+        if serializer.is_valid():
+            chat = serializer.save(user=request.user)
+            
+            # Add welcome message if provided
+            welcome_message = request.data.get('welcome_message')
+            if welcome_message:
+                Message.objects.create(
+                    chat=chat,
+                    content=welcome_message,
+                    role='assistant'
+                )
+            
+            return Response(ChatDetailSerializer(chat).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def chat_detail(request, pk):
+    """
+    Retrieve, update or delete a chat
+    """
+    chat = get_object_or_404(Chat, pk=pk, user=request.user)
+    
+    if request.method == 'GET':
+        serializer = ChatDetailSerializer(chat)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = ChatListSerializer(chat, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        chat.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_message(request, chat_id):
+    """
+    Add a message to a chat
+    """
+    chat = get_object_or_404(Chat, pk=chat_id, user=request.user)
+    
+    serializer = MessageSerializer(data=request.data)
+    if serializer.is_valid():
+        message = serializer.save(chat=chat)
+        
+        # Update chat timestamp
+        chat.save()  # This will update the updated_at field
+        
+        # If this is the first user message and chat has default title, update the title
+        if chat.title == 'New Conversation' and message.role == 'user':
+            # Use first 25 chars of message as title
+            new_title = message.content[:25] + ('...' if len(message.content) > 25 else '')
+            chat.title = new_title
+            chat.save()
+        
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def clear_all_chats(request):
+    """
+    Delete all chats for the authenticated user
+    """
+    Chat.objects.filter(user=request.user).delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
