@@ -34,6 +34,14 @@ def research_politician(request, name):
     
     # Get parameters from query string
     position = request.GET.get('position', '')
+
+    if not position:
+        logger.error("Position parameter is required but not provided.")
+        return Response({
+            'success': False,
+            'error': "Position parameter is required."
+        }, status=400)
+
     max_age = int(request.GET.get('max_age', 7))
     include_sources = request.GET.get('include_sources', '').lower() == 'true'
     detailed = request.GET.get('detailed', '').lower() == 'true'
@@ -44,20 +52,25 @@ def research_politician(request, name):
 
     try:
         # Try to find the politician in the database
-        filters = {'name__iexact': normalized_name}
-        if position:
-            filters['position__iexact'] = position
-            
         try:
-            politician = Politician.objects.get(**filters)
+            # Find politician by name only
+            politician = Politician.objects.get(name__iexact=normalized_name)
             logger.info(f"Found politician in database: {politician.name}")
             
-            # Check if we have recent research or if forced refresh requested
+            # Check if we have recent research for this politician and position
             latest_research = None
             try:
-                latest_research = ResearchResult.objects.filter(
-                    politician=politician
-                ).order_by('-created_at').first()
+                if position:
+                    # Filter by both politician and position
+                    latest_research = ResearchResult.objects.filter(
+                        politician=politician,
+                        position__iexact=position
+                    ).order_by('-created_at').first()
+                else:
+                    # Get the latest research for this politician regardless of position
+                    latest_research = ResearchResult.objects.filter(
+                        politician=politician
+                    ).order_by('-created_at').first()
             except Exception as e:
                 logger.error(f"Error retrieving latest research: {str(e)}")
             
@@ -72,9 +85,9 @@ def research_politician(request, name):
                 research_result = latest_research
             else:
                 # Conduct new research
-                logger.info(f"Conducting new research for {politician.name}")
+                logger.info(f"Conducting new research for {politician.name}, position: {position}")
                 pipeline = ResearchPipeline()
-                research_result = pipeline.research_politician(politician.name, politician.position)
+                research_result = pipeline.research_politician(politician.name, position)
                 
         except Politician.DoesNotExist:
             # Politician not found, conduct new research
@@ -92,13 +105,7 @@ def research_politician(request, name):
             # Process response according to parameters
             if not include_sources and 'sources' in response_data:
                 del response_data['sources']
-                
-            # if not detailed:
-            #     # Truncate long text fields for a summary view
-            #     for field in ['background', 'accomplishments', 'criticisms']:
-            #         if field in response_data and len(response_data[field]) > 300:
-            #             response_data[field] = response_data[field][:300] + '...'
-            
+                            
             # Add metadata
             response_data['metadata'] = {
                 'is_fresh': (timezone.now() - research_result.created_at).days < max_age,
