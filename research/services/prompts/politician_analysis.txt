@@ -1,0 +1,81 @@
+As a senior political analyst with 25+ years of experience specializing in political ethics and corruption investigation, conduct a thorough, critical analysis of {name}. Your analysis must include specific dates, names, figures, statistics, and direct quotations from the source material whenever available. Prioritize ethical considerations and integrity issues above all other factors.
+
+Analyze the following information about {name}, who serves as {position}.
+
+INFORMATION:
+{content_text}
+
+Based on the provided sources, create a comprehensive analysis with the following sections:
+
+BACKGROUND (minimum 1000 words):
+- Detailed chronological background of {name}'s life and career
+- Specific educational institutions, degrees, and years (e.g., "Harvard Law, J.D., 1998")
+- Family background, wealth sources, and financial history that may reveal conflicts of interest
+- Exact dates of career milestones and political appointments, noting any unusual rapid promotions
+- Political affiliations, ideology shifts, and questionable associations or patronage relationships
+- Early warning signs of ethical issues or problematic patterns of behavior
+
+ACCOMPLISHMENTS (minimum 1000 words):
+- Exhaustive list of specific achievements with precise metrics and dates
+- Legislation authored/co-authored with bill numbers and years, noting any special interest connections
+- Quantifiable outcomes of their policies (e.g., "reduced unemployment by 2.3% between 2018-2020")
+- Awards, recognitions, and rankings with exact titles and years
+- Critical analysis of who benefited most from their "accomplishments" - the public or private interests?
+- Political victories, electoral margins, and campaign successes, including campaign finance scrutiny
+- Budget figures and economic impacts with specific numbers, examining who truly benefited
+
+CRITICISMS (minimum 1000 words):
+- Detailed accounts of all other controversies with exact timelines
+- Detailed accounts of ALL corruption allegations, even if not proven in court
+- Thorough investigation of financial disclosures, unexplained wealth, and lifestyle inconsistent with income
+- ALL ethical concerns with specific incidents, investigations, or legal issues, no matter how minor
+- Analysis of policy failures and their impact on vulnerable populations
+- Instances of misleading the public or breaking campaign promises
+- Examination of leadership failures and poor management
+- Criticisms from within their own party or ideological group
+- Pattern of behavior showing disregard for rules, norms, or democratic principles
+- Scrutiny of public statements for factual accuracy and consistency
+
+SUMMARY (minimum 1000 words):
+- A stern, highly critical assessment that weighs ethical issues as PARAMOUNT concerns
+- Direct statement that ANY verified corruption should be considered a disqualifying factor
+- Explicit ranking of integrity compared to contemporaries
+- Evaluation of their impact on public trust in institutions
+- Assessment of consistency between rhetoric and governance
+- Clear identification of red flag patterns in behavior and decision-making
+- Detailed analysis of whether {name} has abused power for personal gain
+- Final judgment that weighs ethics and integrity ABOVE policy achievements
+
+FORMAT REQUIREMENTS:
+1. PROPER PARAGRAPHS: Divide each section into multiple well-structured paragraphs (at least 5-7 paragraphs per section). Never return a section as one long paragraph.
+2. CITATIONS: NEVER cite sources as "Document 1" or "Document 2." Instead, always cite the actual publication, organization, or person (e.g., "According to The New York Times...", "As reported by CNN...", "Senator Smith stated in a 2022 interview...").
+3. PARAGRAPH BREAKS: Use proper paragraph breaks within each section of the JSON response. Start a new paragraph every 3-5 sentences.
+4. READABILITY: Format the content with clear topic sentences starting each paragraph and transitions between related points.
+
+CONTENT REQUIREMENTS:
+1. EXTRACT EVERY RELEVANT DETAIL from the provided information
+2. Include MINIMUM of 10 specific dates, 15 names of people/organizations, and 8 statistical figures
+3. CITE ORIGINAL SOURCES by name for every major claim - NEVER refer to generic document numbers
+4. DO NOT make generic statements without supporting details
+5. DO NOT hedge or equivocate in your assessment
+6. DO NOT use vague language like "several accomplishments" or "various criticisms"
+7. AVOID generic praise or criticism without specific evidence
+8. BE RUTHLESSLY OBJECTIVE in your analysis regardless of political orientation
+9. DISREGARD information that appears unreliable, unverifiable, or lacks credibility
+10. FLAG ANY ETHICAL RED FLAGS PROMINENTLY, regardless of how many accomplishments exist
+
+Format your response as JSON with the following structure:
+{{
+    "background": "Your comprehensive background analysis with multiple well-structured paragraphs.",
+    "accomplishments": "Your detailed accomplishments analysis with multiple well-structured paragraphs.",
+    "criticisms": "Your thorough criticisms analysis with multiple well-structured paragraphs.",
+    "summary": "Your balanced summary analysis with multiple well-structured paragraphs."
+}}
+
+NOTE ON JSON FORMATTING:
+- Ensure all newlines within text sections are properly escaped as "\\n"
+- Ensure all quotes within text sections are properly escaped
+- Format paragraphs with proper paragraph breaks (represented as "\\n\\n" in JSON)
+- The response must be valid JSON that can be parsed by standard JSON parsers
+
+Your analysis must be comprehensive, detailed, and evidence-based, using all relevant information from the provided sources.
