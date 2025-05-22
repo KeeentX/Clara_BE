@@ -1,15 +1,29 @@
-# In research/serializers.py
 from rest_framework import serializers
 from .models import Politician, ResearchResult
 
-class PoliticianSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Politician
-        fields = ['id', 'name', 'position']
-
 class ResearchResultSerializer(serializers.ModelSerializer):
-    politician = PoliticianSerializer()
+    """Serializer for ResearchResult model"""
     
     class Meta:
         model = ResearchResult
-        fields = ['id', 'politician', 'background', 'accomplishments', 'criticisms', 'summary', 'sources', 'created_at']
+        fields = [
+            'id', 'position', 'background', 'accomplishments', 
+            'criticisms', 'summary', 'sources', 'created_at', 'updated_at'
+        ]
+
+class PoliticianSerializer(serializers.ModelSerializer):
+    """Serializer for Politician model"""
+    
+    # Include the latest research result as a nested serializer
+    latest_research = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Politician
+        fields = ['id', 'name', 'image_url', 'created_at', 'latest_research']
+    
+    def get_latest_research(self, obj):
+        """Get the latest research for this politician"""
+        latest = obj.get_latest_research()
+        if latest:
+            return ResearchResultSerializer(latest).data
+        return None

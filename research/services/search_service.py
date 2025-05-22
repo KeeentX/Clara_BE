@@ -36,6 +36,73 @@ class SearchService:
         self.search_engine = search_engine
         self.debug = debug
         logger.info(f"SearchService initialized with search_engine={search_engine}")
+
+    def generate_search_queries(self, name, position):
+        """
+        Generate a list of search queries for researching a politician.
+        
+        Parameters:
+        - name: Politician name
+        - position: Current or most recent position
+        
+        Returns:
+        - List of search query strings
+        """
+        logger.info(f"Generating search queries for: {name} ({position})")
+        
+        # Base queries about the politician
+        base_queries = [
+            f"{name} {position}",
+            f"{name} politician background",
+            f"{name} biography",
+            f"{name} political career",
+        ]
+        
+        # Accomplishments queries
+        accomplishment_queries = [
+            f"{name} accomplishments",
+            f"{name} legislation authored",
+            f"{name} policy success",
+        ]
+        
+        # Criticism and controversy queries
+        criticism_queries = [
+            f"{name} controversy and scandal",
+            f"{name} corruption allegations",
+            f"{name} criticism",
+            f"{name} ethics investigation",
+        ]
+        
+        # Background and history queries
+        background_queries = [
+            f"{name} education background",
+            f"{name} political history",
+            f"{name} family background",
+            f"{name} business interests",
+            f"{name} financial disclosure",
+        ]
+        
+        # Combine all queries
+        all_queries = base_queries + accomplishment_queries + criticism_queries + background_queries
+        
+        # Add position-specific queries if position is provided
+        if position and len(position.strip()) > 0:
+            position_queries = [
+                f"{name} {position} record",
+                f"{name} {position} performance",
+                f"{name} {position} tenure",
+                f"{name} before {position}",
+            ]
+            all_queries.extend(position_queries)
+        
+        # Remove duplicates while preserving order
+        unique_queries = []
+        for query in all_queries:
+            if query not in unique_queries:
+                unique_queries.append(query)
+        
+        logger.info(f"Generated {len(unique_queries)} search queries")
+        return unique_queries
     
     def is_website_url(self, url):
         """

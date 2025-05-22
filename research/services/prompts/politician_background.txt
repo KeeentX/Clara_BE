@@ -1,0 +1,27 @@
+As a senior political analyst with 25+ years of experience specializing in political ethics and corruption investigation, provide a detailed BACKGROUND about {name}, who serves as {position}.
+
+INFORMATION:
+{content_text}
+
+Focus EXCLUSIVELY on background information such as:
+- Detailed chronological background of {name}'s life and career
+- Specific educational institutions, degrees, and years (e.g., "Harvard Law, J.D., 1998")
+- Family background, wealth sources, and financial history that may reveal conflicts of interest
+- Exact dates of career milestones and political appointments, noting any unusual rapid promotions
+- Political affiliations, ideology shifts, and questionable associations or patronage relationships
+- Early warning signs of ethical issues or problematic patterns of behavior
+
+FORMAT REQUIREMENTS:
+1. PROPER PARAGRAPHS: Divide the response into multiple well-structured paragraphs (at least 5-7 paragraphs). Never return as one long paragraph.
+2. CITATIONS: NEVER cite sources as "Document 1" or "Document 2." Instead, always cite the actual publication, organization, or person (e.g., "According to The New York Times...", "As reported by CNN...", "Senator Smith stated in a 2022 interview...").
+3. READABILITY: Format the content with clear topic sentences starting each paragraph and transitions between related points.
+
+CONTENT REQUIREMENTS:
+1. EXTRACT EVERY RELEVANT DETAIL from the provided information about the politician's background
+2. Include specific dates, names of people/organizations, and statistical figures whenever available
+3. CITE ORIGINAL SOURCES by name for every major claim
+4. DO NOT make generic statements without supporting details
+5. BE RUTHLESSLY OBJECTIVE in your analysis regardless of political orientation
+6. DISREGARD information that appears unreliable, unverifiable, or lacks credibility
+
+Your background analysis must be comprehensive, detailed, and evidence-based, using all relevant information from the provided sources.

@@ -5,6 +5,9 @@ from ..models import Politician, ResearchResult
 import logging
 import sys
 import os
+from typing import Dict, Any, List, Union
+from django.utils import timezone
+from .prompt_service import PromptService
 
 # Set up logging with UTF-8 encoding
 logging.basicConfig(
@@ -14,7 +17,7 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
-logger = logging.getLogger("Pipeline Service")
+logger = logging.getLogger("Research Pipeline")
 
 class ResearchPipeline:
     """
@@ -44,128 +47,145 @@ class ResearchPipeline:
             # Consider whether to raise the exception or continue with limited functionality
             self.llm_service = None
     
-    def research_politician(self, name, position=None):
+    def research_politician(self, name, position):
         """
         Research a politician using the pipeline.
         
         Parameters:
         - name: Politician name
-        - position: Optional politician position
+        - position: Required position for this research
         
         Returns:
         - ResearchResult instance with the analysis
         """
-        # Step 1: Find or create the politician
-        politician, created = Politician.objects.get_or_create(
-            name=name,
-            defaults={'position': position or ''}
-        )
-        
-        # Step 2: Generate search queries
-        queries = self._generate_search_queries(name, position)
-        
-        # Step 3: Perform searches
-        all_search_results = []
-        seen_urls = set()
-
-        for query in queries:
-            results = self.search_service.search(query, num_results=10)
-            for result in results:
-                if result['url'] not in seen_urls:
-                    seen_urls.add(result['url'])
-                    all_search_results.append(result)
-                else:
-                    logger.info(f"Duplicate URL found: {result['url']}, skipping.")
-        
-        # Step 4: Fetch content from top results
-        content_list = []
-        extracted_content_texts = []  # Store just the text content for LLM analysis
-        
-        for result in all_search_results: 
-            content = self.search_service.fetch_content(result['url'])
-
-            if not content or len(content.strip()) < 100:
-                logger.info(f"Skipping URL with insufficient content: {result['url']}")
-                continue
-
-            content_dict = {
-                'url': result['url'],
-                'title': result['title'],
-                'content': content,
-                'query' : result['query'], 
-            }
-            content_list.append(content_dict)
-            extracted_content_texts.append(content)
-        
-        # Step 5: Analyze with LLM
-        if self.llm_service and extracted_content_texts:
-            try:
-                logger.info(f"Analyzing {name} with LLM using {len(extracted_content_texts)} content sources")
-                analysis = self.llm_service.analyze_politician(
-                    name=name, 
-                    position=position or "politician", 
-                    content_list=extracted_content_texts
-                )
+        try:
+            logger.info(f"Starting research pipeline for politician: {name} ({position})")
+            
+            # Step 1: Get or create politician
+            politician, created = Politician.objects.get_or_create(name=name)
+            if created:
+                logger.info(f"Created new politician record: {name}")
+            else:
+                logger.info(f"Using existing politician record: {name}")
+            
+            # Step 2: Generate search queries
+            search_queries = self.search_service.generate_search_queries(name, position)
+            logger.info(f"Generated {len(search_queries)} search queries")
+            
+            # Step 3: Search for content
+            all_search_results = []
+            for query in search_queries:
+                results = self.search_service.search(query, num_results=3)
+                if results:
+                    for result in results:
+                        result['query'] = query  # Track which query led to this result
+                    all_search_results.extend(results)
+            
+            logger.info(f"Found {len(all_search_results)} search results")
+            
+            # Step 4: Extract content from search results
+            content_list = []
+            extracted_content_texts = []
+            
+            for result in all_search_results: 
+                content = self.search_service.fetch_content(result['url'])
                 
-                # Step 6: Create and save research result
-                research_result = ResearchResult.objects.create(
-                    politician=politician,
-                    background=analysis.get('background', ''),
-                    accomplishments=analysis.get('accomplishments', ''),
-                    criticisms=analysis.get('criticisms', ''),
-                    summary=analysis.get('summary', ''),
-                    sources=[
-                        {
-                            'url': content['url'],
-                            'title': content['title'],
-                            'query': content['query'],
-                        } 
-                        for content in content_list 
-                    ]
-                )
+                if not content or len(content.strip()) < 100:
+                    logger.info(f"Skipping URL with insufficient content: {result['url']}")
+                    continue
                 
-                logger.info(f"Completed research for {name}")
-                return research_result
-            except Exception as e:
-                logger.error(f"Error during LLM analysis: {str(e)}")
-                # Return partial results if LLM analysis fails
+                content_dict = {
+                    'url': result['url'],
+                    'title': result['title'],
+                    'content': content,
+                    'query': result['query'], 
+                }
+                content_list.append(content_dict)
+                extracted_content_texts.append(content)
+            
+            # Step 5: Analyze with LLM (now broken into separate calls)
+            if self.llm_service and extracted_content_texts:
+                try:
+                    logger.info(f"Starting multi-part analysis for {name} with LLM using {len(extracted_content_texts)} content sources")
+                    
+                    # Background analysis
+                    logger.info("Step 5.1: Analyzing background")
+                    background = self.llm_service.analyze_politician_background(
+                        name=name, 
+                        position=position, 
+                        content_list=extracted_content_texts
+                    )
+                    
+                    # Accomplishments analysis
+                    logger.info("Step 5.2: Analyzing accomplishments")
+                    accomplishments = self.llm_service.analyze_politician_accomplishments(
+                        name=name, 
+                        position=position, 
+                        content_list=extracted_content_texts
+                    )
+                    
+                    # Criticisms analysis
+                    logger.info("Step 5.3: Analyzing criticisms")
+                    criticisms = self.llm_service.analyze_politician_criticisms(
+                        name=name, 
+                        position=position, 
+                        content_list=extracted_content_texts
+                    )
+                    
+                    # Summary judgment (using all previous analyses)
+                    logger.info("Step 5.4: Creating summary judgment")
+                    summary = self.llm_service.analyze_politician_summary(
+                        name=name, 
+                        position=position,
+                        background=background,
+                        accomplishments=accomplishments,
+                        criticisms=criticisms,
+                        content_list=extracted_content_texts
+                    )
+                    
+                    # Step 6: Create and save research result
+                    research_result = ResearchResult.objects.create(
+                        politician=politician,
+                        position=position,
+                        background=background,
+                        accomplishments=accomplishments,
+                        criticisms=criticisms,
+                        summary=summary,
+                        sources=[
+                            {
+                                'url': content['url'],
+                                'title': content['title'],
+                                'query': content['query'],
+                                'content': content['content'],
+                            } 
+                            for content in content_list 
+                        ]
+                    )
+                    
+                    logger.info(f"Completed research for {name}")
+                    return research_result
+                    
+                except Exception as e:
+                    logger.error(f"Error during LLM analysis: {str(e)}")
+                    # Return partial results if LLM analysis fails
+                    return {
+                        "politician": politician,
+                        "error": str(e),
+                        "content_list": content_list
+                    }
+            else:
+                logger.warning("No LLM service available or no content found")
                 return {
                     "politician": politician,
-                    "error": str(e),
+                    "error": "No content found or LLM service unavailable",
                     "content_list": content_list
                 }
-        else:
-            logger.warning(f"Skipping LLM analysis: LLM service not available or no content extracted")
-            # Return just the content list if LLM analysis is skipped
-            return content_list
+                
+        except Exception as e:
+            logger.error(f"Error in research pipeline: {str(e)}")
+            return {
+                "name": name,
+                "position": position,
+                "error": str(e)
+            }
     
-    def _generate_search_queries(self, name, position=None):
-        """
-        Generate search queries for a politician.
-        
-        Parameters:
-        - name: Politician name
-        - position: Optional politician position
-        
-        Returns:
-        - List of search query strings
-        """
-        queries = [
-            f"{name} personal biography and early life",
-            f"{name} political background",
-            f"{name} career and credentials",
-            f"{name} accomplishments and achievements",
-            f"{name} policy positions on key issues",
-            f"{name} issues and corruption",
-            f"{name} criticism and controversy",
-            f"{name} ethics investigations and watchdog reports",
-            f"{name} endorsements and affiliations", 
-        ]
-        
-        if position:
-            queries.append(f"{name} {position}")
-            queries.append(f"{name} {position} background")
-            queries.append(f"{name} {position} achievements")
-            queries.append(f"{name} {position} criticism")
-        
-        return queries

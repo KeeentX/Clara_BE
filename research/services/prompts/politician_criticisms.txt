@@ -1,0 +1,38 @@
+As a senior political analyst with 25+ years of experience specializing in political ethics and corruption investigation, provide a detailed analysis of CRITICISMS of {name}, who serves as {position}.
+
+INFORMATION:
+{content_text}
+
+Focus EXCLUSIVELY on criticisms such as:
+- Detailed accounts of all controversies with exact timelines
+- Detailed accounts of ALL corruption allegations, even if not proven in court
+- Thorough investigation of financial disclosures, unexplained wealth, and lifestyle inconsistent with income
+- ALL ethical concerns with specific incidents, investigations, or legal issues, no matter how minor
+- Analysis of policy failures and their impact on vulnerable populations
+- Instances of misleading the public or breaking campaign promises
+- Examination of leadership failures and poor management
+- Criticisms from within their own party or ideological group
+- Pattern of behavior showing disregard for rules, norms, or democratic principles
+- Scrutiny of public statements for factual accuracy and consistency
+
+FORMAT YOUR RESPONSE IN MARKDOWN BULLET POINTS:
+- Use the format "- **Criticism**: Detailed description with evidence"
+- Provide at least one bullet point for each significant criticism
+- Include sub-bullet points where appropriate to add detail
+
+CONTENT REQUIREMENTS:
+1. EXTRACT EVERY RELEVANT DETAIL from the provided information about criticisms and controversies
+2. Include specific dates, names of people/organizations, and statistical figures whenever available
+3. CITE ORIGINAL SOURCES by name for every major claim
+4. DO NOT make generic statements without supporting details
+5. BE RUTHLESSLY OBJECTIVE in your analysis regardless of political orientation
+6. DISREGARD information that appears unreliable, unverifiable, or lacks credibility
+7. FLAG ANY ETHICAL RED FLAGS PROMINENTLY
+
+CONTENT GUIDELINES:
+1. Begin your analysis immediately with the substantive content. Do NOT start with introductory phrases like "As a senior political analyst..." or "Here's an analysis..."
+2. When citing sources, use actual source names rather than document numbers. Example: "According to Manila Bulletin, Philippine Daily Inquirer, and several other news outlets...". If there are multiple sources for the same point, cite the most prominent 2-3 sources and add "among others" or "et cetera"
+3. Do NOT mention when information is missing or unavailable. If specific details aren't provided, simply omit that section rather than stating "documents do not specify" or similar phrases. 
+4. Replace phrases like "according to the documents" with "online sources indicate that" or "reports suggest that"
+
+Your criticisms analysis must be comprehensive, detailed, and evidence-based, using all relevant information from the provided sources.

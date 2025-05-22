@@ -23,6 +23,10 @@ class PromptService:
         # Define prompt mappings
         self.prompt_map = {
             'politician_analysis': 'politician_analysis.txt',
+            'politician_summary': 'politician_summary.txt',
+            'politician_criticisms': 'politician_criticisms.txt',
+            'politician_accomplishments': 'politician_accomplishments.txt',
+            'politician_background': 'politician_background.txt',
         }
         
         logger.info("Prompt Service initialized successfully")
