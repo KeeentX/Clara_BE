@@ -1,6 +1,6 @@
 from django.conf import settings
 from .search_service import SearchService
-from .llm_service import LLMService  # This now uses our updated Gemini implementation
+from .llm_service import LLMService 
 from ..models import Politician, ResearchResult
 import logging
 import sys
@@ -40,7 +40,7 @@ class ResearchPipeline:
         
         # Initialize the LLM service - now uses environment variable
         try:
-            self.llm_service = LLMService()  # No API key needed as parameter anymore
+            self.llm_service = LLMService()
             logger.info("LLM Service initialized successfully")
         except ValueError as e:
             logger.error(f"Failed to initialize LLM Service: {str(e)}")
@@ -67,6 +67,29 @@ class ResearchPipeline:
                 logger.info(f"Created new politician record: {name}")
             else:
                 logger.info(f"Using existing politician record: {name}")
+
+            politician_image = self.search_service.search_politician_image(name, position)
+            
+            if politician_image:
+                logger.info(f"Found image for {name}: {politician_image['url']}")
+                logger.info(f"Image source: {politician_image['source']} via {politician_image['search_method']}")
+                
+                # Verify image accessibility
+                if self.search_service.verify_image_accessibility(politician_image['url']):
+                    logger.info("Image verified as accessible")
+                    
+                    # UPDATE: Set the image in the Politician model if it doesn't have one or if we found a better one
+                    if not politician.image_url:
+                        politician.image_url = politician_image['url']
+                        politician.save()
+                        logger.info(f"Updated politician {name} with image URL in database")
+                    else:
+                        logger.info(f"Politician {name} already has an image, keeping existing one")
+                        
+                else:
+                    logger.warning("Image URL not accessible, will store anyway")
+            else:
+                logger.warning(f"No image found for {name}")
             
             # Step 2: Generate search queries
             search_queries = self.search_service.generate_search_queries(name, position)
@@ -75,7 +98,7 @@ class ResearchPipeline:
             # Step 3: Search for content
             all_search_results = []
             for query in search_queries:
-                results = self.search_service.search(query, num_results=3)
+                results = self.search_service.search(query, num_results=2)
                 if results:
                     for result in results:
                         result['query'] = query  # Track which query led to this result
@@ -151,6 +174,8 @@ class ResearchPipeline:
                         accomplishments=accomplishments,
                         criticisms=criticisms,
                         summary=summary,
+                        image_url=politician_image['url'] if politician_image else None,
+                        image_metadata=politician_image if politician_image else None,
                         sources=[
                             {
                                 'url': content['url'],
@@ -171,14 +196,16 @@ class ResearchPipeline:
                     return {
                         "politician": politician,
                         "error": str(e),
-                        "content_list": content_list
+                        "content_list": content_list,
+                        "image": politician_image,
                     }
             else:
                 logger.warning("No LLM service available or no content found")
                 return {
                     "politician": politician,
                     "error": "No content found or LLM service unavailable",
-                    "content_list": content_list
+                    "content_list": content_list,
+                    "image": politician_image, 
                 }
                 
         except Exception as e:

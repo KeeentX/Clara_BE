@@ -3,7 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import re
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 import logging
 import sys
 
@@ -69,7 +69,6 @@ class SearchService:
         criticism_queries = [
             f"{name} controversy and scandal",
             f"{name} corruption allegations",
-            f"{name} criticism",
             f"{name} ethics investigation",
         ]
         
@@ -383,3 +382,385 @@ class SearchService:
     def close(self):
         """Clean up any resources."""
         pass
+
+    def search_politician_image(self, name, position=None):
+        """
+        Search for a single image of the politician using free methods.
+        
+        Parameters:
+        - name: Politician name
+        - position: Current or most recent position (optional)
+        
+        Returns:
+        - Dictionary with image URL and metadata, or None if no image found
+        """
+        logger.info(f"Searching for image of politician: {name}")
+        
+        # Method 1: Try Wikipedia first (most reliable for politicians)
+        result = self._search_wikipedia_image(name)
+        if result:
+            logger.info(f"Found image via Wikipedia: {result['url']}")
+            return result
+        
+        # Method 2: Try DuckDuckGo (no API key required)
+        result = self._search_duckduckgo_image(name, position)
+        if result:
+            logger.info(f"Found image via DuckDuckGo: {result['url']}")
+            return result
+        
+        # Method 3: Fall back to Google Images scraping
+        result = self._scrape_google_images(name, position)
+        if result:
+            logger.info(f"Found image via Google scraping: {result['url']}")
+            return result
+        
+        logger.warning(f"No image found for {name}")
+        return None
+    
+    def _search_wikipedia_image(self, name):
+        """
+        Search for politician image on Wikipedia using the free Wikipedia API.
+        
+        Parameters:
+        - name: Politician name
+        
+        Returns:
+        - Dictionary with image data or None
+        """
+        try:
+            logger.info(f"Searching Wikipedia for {name}")
+            
+            # Step 1: Search for the Wikipedia page
+            search_url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + quote(name)
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (compatible; PoliticianResearchBot/1.0)'
+            }
+            
+            response = requests.get(search_url, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Check if we have a thumbnail image
+                if 'thumbnail' in data and 'source' in data['thumbnail']:
+                    image_url = data['thumbnail']['source']
+                    
+                    # Get higher resolution version if available
+                    if 'originalimage' in data and 'source' in data['originalimage']:
+                        image_url = data['originalimage']['source']
+                    
+                    # Validate the image URL
+                    if self._is_valid_image_url(image_url):
+                        return {
+                            'url': image_url,
+                            'title': data.get('title', name),
+                            'source': 'wikipedia',
+                            'page_url': data.get('content_urls', {}).get('desktop', {}).get('page', ''),
+                            'description': data.get('description', ''),
+                            'search_method': 'wikipedia_api'
+                        }
+            
+            # If direct search fails, try searching Wikipedia's search API
+            search_api_url = "https://en.wikipedia.org/api/rest_v1/page/summary/" + quote(f"{name} politician")
+            response = requests.get(search_api_url, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if 'thumbnail' in data and 'source' in data['thumbnail']:
+                    image_url = data['thumbnail']['source']
+                    if 'originalimage' in data and 'source' in data['originalimage']:
+                        image_url = data['originalimage']['source']
+                    
+                    if self._is_valid_image_url(image_url):
+                        return {
+                            'url': image_url,
+                            'title': data.get('title', name),
+                            'source': 'wikipedia',
+                            'page_url': data.get('content_urls', {}).get('desktop', {}).get('page', ''),
+                            'description': data.get('description', ''),
+                            'search_method': 'wikipedia_api_search'
+                        }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error searching Wikipedia: {str(e)}")
+            return None
+    
+    def _search_duckduckgo_image(self, name, position=None):
+        """
+        Search for images using DuckDuckGo (no API key required).
+        
+        Parameters:
+        - name: Politician name
+        - position: Current or most recent position (optional)
+        
+        Returns:
+        - Dictionary with image data or None
+        """
+        try:
+            logger.info(f"Searching DuckDuckGo for {name}")
+            
+            # Construct search query
+            if position:
+                query = f"{name} {position} politician"
+            else:
+                query = f"{name} politician"
+            
+            # DuckDuckGo image search endpoint
+            search_url = "https://duckduckgo.com/"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            # Get initial page to get tokens
+            session = requests.Session()
+            response = session.get(search_url, headers=headers)
+            
+            # Extract vqd token from the page
+            vqd_match = re.search(r'vqd=([\d-]+)', response.text)
+            if not vqd_match:
+                return None
+            
+            vqd = vqd_match.group(1)
+            
+            # Now search for images
+            image_search_url = "https://duckduckgo.com/i.js"
+            params = {
+                'l': 'us-en',
+                'o': 'json',
+                'q': query,
+                'vqd': vqd,
+                'f': ',,,',
+                'p': '1'
+            }
+            
+            response = session.get(image_search_url, headers=headers, params=params, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if 'results' in data and len(data['results']) > 0:
+                    # Get the first result
+                    result = data['results'][0]
+                    image_url = result.get('image')
+                    
+                    if self._is_valid_image_url(image_url):
+                        return {
+                            'url': image_url,
+                            'title': result.get('title', name),
+                            'source': result.get('source', 'duckduckgo'),
+                            'width': result.get('width'),
+                            'height': result.get('height'),
+                            'search_method': 'duckduckgo'
+                        }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error searching DuckDuckGo: {str(e)}")
+            return None
+    
+    def _scrape_google_images(self, name, position=None):
+        """
+        Scrape Google Images for a single image result (improved version).
+        
+        Parameters:
+        - name: Politician name
+        - position: Current or most recent position (optional)
+        
+        Returns:
+        - Dictionary with image data or None
+        """
+        try:
+            logger.info(f"Scraping Google Images for {name}")
+            
+            # Construct search query
+            if position:
+                query = f"{name} {position} politician"
+            else:
+                query = f"{name} politician"
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate',
+                'Connection': 'keep-alive',
+            }
+            
+            # Google Images search URL
+            search_url = f"https://www.google.com/search?q={quote(query)}&tbm=isch&safe=active&tbs=itp:face"  # Filter for faces
+            
+            response = requests.get(search_url, headers=headers, timeout=15)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Method 1: Look for images in script tags (primary method)
+            scripts = soup.find_all('script')
+            for script in scripts:
+                if script.string and 'AF_initDataChunkQueue' in script.string:
+                    script_content = script.string
+                    
+                    # More refined regex to find image URLs
+                    image_patterns = [
+                        r'"(https://[^"]*\.(?:jpg|jpeg|png|gif|webp)(?:\?[^"]*)?)"',
+                        r'"(https://encrypted-tbn\d\.gstatic\.com/images\?[^"]*)"',
+                        r'"(https://[^"]*googleapis\.com/[^"]*\.(?:jpg|jpeg|png))"'
+                    ]
+                    
+                    for pattern in image_patterns:
+                        image_urls = re.findall(pattern, script_content, re.IGNORECASE)
+                        
+                        for image_url in image_urls:
+                            # Clean up the URL
+                            image_url = image_url.replace('\\u003d', '=').replace('\\u0026', '&')
+                            
+                            if self._is_valid_image_url(image_url) and self._is_likely_person_image(image_url):
+                                return {
+                                    'url': image_url,
+                                    'title': f"Image of {name}",
+                                    'source': 'google_images',
+                                    'thumbnail': image_url,
+                                    'search_method': 'google_scraping_script'
+                                }
+            
+            # Method 2: Look for img tags with specific attributes
+            img_tags = soup.find_all('img')
+            for img in img_tags:
+                # Check various image attributes
+                image_url = None
+                for attr in ['data-src', 'src', 'data-iurl']:
+                    if img.get(attr):
+                        image_url = img.get(attr)
+                        break
+                
+                if image_url and self._is_valid_image_url(image_url) and self._is_likely_person_image(image_url):
+                    return {
+                        'url': image_url,
+                        'title': img.get('alt', f"Image of {name}"),
+                        'source': 'google_images',
+                        'thumbnail': image_url,
+                        'search_method': 'google_scraping_img_tags'
+                    }
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error scraping Google Images: {str(e)}")
+            return None
+    
+    def _is_valid_image_url(self, url):
+        """
+        Check if URL points to a valid image.
+        
+        Parameters:
+        - url: Image URL to validate
+        
+        Returns:
+        - Boolean indicating if URL is valid
+        """
+        if not url:
+            return False
+        
+        try:
+            # Check if URL has image extension or is from known image services
+            url_lower = url.lower()
+            
+            # Valid image extensions
+            image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp']
+            has_image_extension = any(ext in url_lower for ext in image_extensions)
+            
+            # Known image hosting services
+            image_services = [
+                'upload.wikimedia.org',
+                'commons.wikimedia.org', 
+                'encrypted-tbn',
+                'gstatic.com',
+                'googleapis.com',
+                'imgur.com',
+                'flickr.com'
+            ]
+            is_image_service = any(service in url_lower for service in image_services)
+            
+            # Parse URL to check if it's well-formed
+            parsed = urlparse(url)
+            has_valid_scheme = parsed.scheme in ['http', 'https']
+            has_valid_domain = parsed.netloc != ''
+            
+            # Exclude certain domains that typically don't host politician images
+            excluded_domains = [
+                'ads.', 'doubleclick.', 'googleadservices.', 'googlesyndication.',
+                'facebook.com/tr', 'analytics.', 'google-analytics.'
+            ]
+            is_not_ad_domain = not any(domain in url_lower for domain in excluded_domains)
+            
+            return (has_image_extension or is_image_service) and has_valid_scheme and has_valid_domain and is_not_ad_domain
+            
+        except Exception:
+            return False
+    
+    def _is_likely_person_image(self, url):
+        """
+        Check if the image URL is likely to be a person/politician image.
+        
+        Parameters:
+        - url: Image URL to check
+        
+        Returns:
+        - Boolean indicating if it's likely a person image
+        """
+        url_lower = url.lower()
+        
+        # Exclude obvious non-person images
+        exclude_keywords = [
+            'logo', 'icon', 'banner', 'flag', 'seal', 'chart', 'graph',
+            'map', 'building', 'background', 'texture', 'pattern'
+        ]
+        
+        for keyword in exclude_keywords:
+            if keyword in url_lower:
+                return False
+        
+        # Prefer URLs that suggest person/portrait images
+        prefer_keywords = [
+            'portrait', 'headshot', 'photo', 'person', 'face', 'profile'
+        ]
+        
+        # If it has person-related keywords, prefer it
+        for keyword in prefer_keywords:
+            if keyword in url_lower:
+                return True
+        
+        # Default to True if no negative indicators
+        return True
+    
+    def verify_image_accessibility(self, image_url):
+        """
+        Verify that an image URL is accessible and returns an image.
+        
+        Parameters:
+        - image_url: URL to verify
+        
+        Returns:
+        - Boolean indicating if image is accessible
+        """
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            
+            # Make a HEAD request to check if image exists
+            response = requests.head(image_url, headers=headers, timeout=5, allow_redirects=True)
+            
+            # Check if response is successful and content type is image
+            if response.status_code == 200:
+                content_type = response.headers.get('content-type', '').lower()
+                return content_type.startswith('image/')
+            
+            return False
+            
+        except Exception:
+            return False

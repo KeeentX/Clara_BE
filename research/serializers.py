@@ -8,7 +8,8 @@ class ResearchResultSerializer(serializers.ModelSerializer):
         model = ResearchResult
         fields = [
             'id', 'position', 'background', 'accomplishments', 
-            'criticisms', 'summary', 'sources', 'created_at', 'updated_at'
+            'criticisms', 'summary', 'sources', 'created_at', 'updated_at',
+            'image_url', 'image_metadata'
         ]
 
 class PoliticianSerializer(serializers.ModelSerializer):

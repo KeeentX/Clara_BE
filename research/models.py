@@ -37,6 +37,8 @@ class ResearchResult(models.Model):
     sources = models.JSONField(default=dict)  # Store source URLs and metadata
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    image_url = models.URLField(max_length=500, blank=True, null=True)
+    image_metadata = models.JSONField(blank=True, null=True)
     
     class Meta:
         indexes = [

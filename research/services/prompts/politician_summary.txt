@@ -12,33 +12,51 @@ CRITICISMS:
 ADDITIONAL INFORMATION:
 {content_text}
 
-Provide a stern, highly critical SUMMARY JUDGMENT that includes:
-- A direct statement that ANY verified corruption should be considered a disqualifying factor
-- Explicit ranking of integrity compared to contemporaries
-- Evaluation of their impact on public trust in institutions
-- Assessment of consistency between rhetoric and governance
-- Clear identification of red flag patterns in behavior and decision-making
-- Detailed analysis of whether {name} has abused power for personal gain
-- Final judgment that weighs ethics and integrity ABOVE policy achievements
+# Analysis Framework
+Evaluate the politician across these key dimensions:
+- Legislative effectiveness and policy impact
+- Ethical standards and integrity in office
+- Consistency between public positions and actions
+- Overall contribution to governance and public welfare
+- Response to legitimate criticisms and accountability
 
-FORMAT REQUIREMENTS:
-1. PROPER PARAGRAPHS: Divide the response into multiple well-structured paragraphs (at least 5-7 paragraphs). Never return as one long paragraph.
-2. CITATIONS: NEVER cite sources as "Document 1" or "Document 2." Instead, always cite the actual publication, organization, or person.
-3. READABILITY: Format the content with clear topic sentences starting each paragraph and transitions between related points.
+# Critical Evaluation Standards
+When assessing criticisms:
+- Weight evidence quality: Distinguish between substantiated concerns and unproven allegations
+- Consider context: Evaluate whether criticisms reflect systemic issues, isolated incidents, or political attacks
+- Assess proportionality: Determine if criticisms are proportionate to actual impact or harm
+- Verify credibility: Only include criticisms from reliable sources with supporting evidence
 
-CONTENT REQUIREMENTS:
-1. INCORPORATE insights from the background, accomplishments, and criticisms sections
-2. Include specific dates, names of people/organizations, and statistical figures whenever available
-3. CITE ORIGINAL SOURCES by name for every major claim
-4. DO NOT make generic statements without supporting details
-5. DO NOT hedge or equivocate in your assessment
-6. BE RUTHLESSLY OBJECTIVE in your analysis regardless of political orientation
-7. DISREGARD information that appears unreliable, unverifiable, or lacks credibility
+# When assessing accomplishments:
+- Measure real impact: Focus on tangible outcomes rather than just initiatives announced
+- Consider sustainability: Evaluate whether achievements have lasting positive effects
+- Assess scope: Determine whether accomplishments benefit broad constituencies or narrow interests
 
-CONTENT GUIDELINES:
-1. Begin your analysis immediately with the substantive content. Do NOT start with introductory phrases like "As a senior political analyst..." or "Here's an analysis..."
-2. When citing sources, use actual source names rather than document numbers. Example: "According to Manila Bulletin, Philippine Daily Inquirer, and several other news outlets...". If there are multiple sources for the same point, cite the most prominent 2-3 sources and add "among others" or "et cetera"
-3. Do NOT mention when information is missing or unavailable. If specific details aren't provided, simply omit that section rather than stating "documents do not specify" or similar phrases. 
-4. Replace phrases like "according to the documents" with "online sources indicate that" or "reports suggest that"
+# FORMAT REQUIREMENTS:
+- PROPER PARAGRAPHS: Structure response into 5-7 well-organized paragraphs with clear topic sentences
+- CITATIONS: Always cite actual publication names, organizations, or officials - never "Document 1" or "Document 2"
+- READABILITY: Use clear transitions and logical flow between related points
 
-Your summary judgment must be comprehensive, detailed, and evidence-based, using all relevant information from the provided analysis.
+# CONTENT REQUIREMENTS:
+- Incorporate all sections: Draw insights from background, accomplishments, criticisms, and additional information
+- Include specifics: Use dates, names, organizations, and statistical figures when available
+- Cite original sources: Reference actual source names for every major claim
+- Avoid generic statements: Support all assessments with specific details
+- Maintain objectivity: Let evidence drive conclusions rather than predetermined assumptions
+- Evaluate source reliability: Disregard information that lacks credibility or verification
+
+# CONTENT GUIDELINES:
+- Begin analysis immediately with substantive content - no introductory phrases like "As a political analyst..."
+- Use actual source names in citations: "According to Manila Bulletin, Philippine Daily Inquirer, and several other outlets..."
+- When multiple sources support a point, cite 2-3 prominent ones and add "among others"
+- Never mention missing information - simply omit sections without available details
+- Replace "according to documents" with "reports indicate" or "sources suggest"
+
+# BALANCED JUDGMENT APPROACH:
+- Present a fair assessment that acknowledges both strengths and legitimate weaknesses
+- Distinguish between serious ethical lapses and minor controversies
+- Recognize effective governance even when accompanied by criticism
+- Identify patterns of behavior (positive or negative) supported by evidence
+- Provide an overall assessment that reflects the preponderance of credible evidence
+
+Your analysis should be thorough, evidence-based, and capable of recognizing genuine public service while also identifying legitimate concerns when they exist.
