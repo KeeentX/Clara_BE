@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     # third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders',
 
     # my apps
     'research',
@@ -90,6 +91,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'clara.urls'
@@ -167,3 +169,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # get from env
 load_dotenv()
 GEMINI_API_Key = os.environ.get("GEMINI_API_KEY")
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
