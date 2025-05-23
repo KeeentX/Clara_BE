@@ -1,6 +1,7 @@
 from django.conf import settings
 from .search_service import SearchService
-from .llm_service import LLMService  # This now uses our updated Gemini implementation
+from .llm_service import LLMService
+from .politician_service import PoliticianPipeline
 from ..models import Politician, ResearchResult
 import logging
 import sys
@@ -46,6 +47,11 @@ class ResearchPipeline:
             logger.error(f"Failed to initialize LLM Service: {str(e)}")
             # Consider whether to raise the exception or continue with limited functionality
             self.llm_service = None
+
+        self.politician_pipeline = PoliticianPipeline(
+            search_service=self.search_service,
+            llm_service=self.llm_service
+        )
     
     def research_politician(self, name, position):
         """
@@ -67,6 +73,11 @@ class ResearchPipeline:
                 logger.info(f"Created new politician record: {name}")
             else:
                 logger.info(f"Using existing politician record: {name}")
+
+            # Step 1.5: Enrich politician with basic info if needed
+            if created or not politician.party or not politician.image_url:
+                logger.info(f"Enriching politician with basic information")
+                politician = self.politician_pipeline.enrich_politician(politician, position)
             
             # Step 2: Generate search queries
             search_queries = self.search_service.generate_search_queries(name, position)
@@ -90,7 +101,7 @@ class ResearchPipeline:
             for result in all_search_results: 
                 content = self.search_service.fetch_content(result['url'])
                 
-                if not content or len(content.strip()) < 100:
+                if not content or len(content.strip()) < 500:
                     logger.info(f"Skipping URL with insufficient content: {result['url']}")
                     continue
                 
