@@ -259,3 +259,127 @@ class LLMService:
             content_text = content_text[:max_chars] + "... [content truncated due to length]"
         
         return content_text
+    
+    def extract_party_affiliation(self, name: str, position: str, content_list: List[str]) -> str:
+        """
+        Extract the party affiliation of a politician.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - content_list: List of text content to analyze
+        
+        Returns:
+        - Party name as a string
+        """
+        logger.info(f"Extracting party affiliation for: {name}")
+        
+        if not content_list:
+            return ""
+        
+        content_text = self._prepare_content_for_analysis(content_list, max_chars=30000)
+        
+        prompt = f"""
+        Identify the political party of {name}, who serves as {position}.
+
+        INFORMATION:
+        {content_text}
+
+        Extract ONLY the name of the political party. Return ONLY the party name with no additional text.
+        If multiple parties are mentioned, return only the current or most recent party.
+        If no clear party is mentioned, or if they are independent, respond with "Independent".
+        """
+        
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error extracting party: {result['error']}")
+            return ""
+        
+        party = result.get("response", "").strip()
+        return party
+
+    def extract_short_bio(self, name: str, position: str, content_list: List[str]) -> str:
+        """
+        Extract a concise biography for a politician.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - content_list: List of text content to analyze
+        
+        Returns:
+        - Short biography text (1-2 paragraphs)
+        """
+        logger.info(f"Extracting short bio for: {name}")
+        
+        if not content_list:
+            return ""
+        
+        content_text = self._prepare_content_for_analysis(content_list, max_chars=30000)
+        
+        prompt = f"""
+        Create a concise biography for {name}, who serves as {position}.
+
+        INFORMATION:
+        {content_text}
+
+        Write a short, factual biography of {name} in 1-2 paragraphs (maximum 150 words).
+        Include key career milestones, education, and notable achievements.
+        Focus on objective facts rather than subjective assessments.
+        Do not include citations or references in the bio.
+        """
+        
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error extracting bio: {result['error']}")
+            return ""
+        
+        bio = result.get("response", "").strip()
+        return bio
+
+    def extract_policy_stances(self, name: str, position: str, content_list: List[str]) -> str:
+        """
+        Extract key policy positions for a politician.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - content_list: List of text content to analyze
+        
+        Returns:
+        - String containing policy stances in markdown format
+        """
+        logger.info(f"Extracting policy stances for: {name}")
+        
+        if not content_list:
+            return ""
+        
+        content_text = self._prepare_content_for_analysis(content_list, max_chars=40000)
+        
+        prompt = f"""
+        Identify the key policy positions of {name}, who serves as {position}.
+
+        INFORMATION:
+        {content_text}
+
+        Extract 5-10 key policy positions. For each policy area, provide a concise description of their stance.
+        
+        Format your response as a markdown bullet list with each entry in the following format:
+        - **[Issue Name]**: [Brief description of their stance on this issue]
+        
+        For example:
+        - **Healthcare**: Supports universal healthcare with expanded coverage for low-income families.
+        - **Education**: Advocates for increased teacher salaries and modernizing school infrastructure.
+        
+        Only include the bullet list in your response, with no introduction or conclusion.
+        Use clear issue names like Healthcare, Taxation, Climate Change, Education, etc.
+        Each stance should be a single sentence or short paragraph describing their position.
+        """
+        
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error extracting policy stances: {result['error']}")
+            return ""
+        
+        stances = result.get("response", "").strip()
+        return stances

@@ -383,3 +383,152 @@ class SearchService:
     def close(self):
         """Clean up any resources."""
         pass
+
+    def search_politician_image(self, name, position=""):
+        """
+        Search for an image of a politician - try Wikipedia first, then Google.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position (optional)
+        
+        Returns:
+        - URL of an image if found, empty string otherwise
+        """
+        logger.info(f"Searching for image of {name}")
+        
+        try:
+            # 1. Try Wikipedia first (most reliable source)
+            wiki_image = self._get_wikipedia_image(name)
+            if wiki_image:
+                logger.info(f"Found Wikipedia image for {name}")
+                return wiki_image
+            
+            # 2. Fallback to Google image search
+            logger.info(f"No Wikipedia image found, trying Google image search")
+            
+            # Construct search query with position if provided
+            if position and position.strip():
+                query = f"{name} {position} headshot"
+            else:
+                query = f"{name} politician headshot"
+                
+            # Construct Google Image search URL
+            from urllib.parse import quote_plus
+            search_url = f"https://www.google.com/search?q={quote_plus(query)}&tbm=isch"
+            
+            logger.info(f"Using Google Image search URL: {search_url}")
+            
+            # Set up headers to mimic a browser
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            }
+            
+            # Get the search results page
+            response = requests.get(search_url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                logger.error(f"Google Image search failed with status code {response.status_code}")
+                return ""
+                
+            # Parse the HTML
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Simply get the second image (first is usually Google logo)
+            img_tags = soup.find_all('img')
+            if len(img_tags) >= 2:
+                src = img_tags[1].get('src', '')
+                if src and src.startswith('http'):
+                    logger.info(f"Found first Google image result: {src}")
+                    return src
+            else:
+                logger.warning(f"Less than 2 images found in Google search results for {name}")
+        
+            logger.warning(f"No image found for {name}")
+            return ""
+            
+        except Exception as e:
+            logger.error(f"Error in image search: {str(e)}")
+            return ""
+
+    def _get_wikipedia_image(self, name):
+        """Get an image from Wikipedia using their API"""
+        try:
+            # Format the name for Wikipedia
+            wiki_name = name.replace(' ', '_')
+            
+            # Try to get Wikipedia summary which often includes an image
+            wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{wiki_name}"
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (compatible; PoliticianResearchBot/1.0)'
+            }
+            
+            response = requests.get(wiki_url, headers=headers, timeout=5)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Check if there's an image in the response
+                if 'thumbnail' in data and 'source' in data['thumbnail']:
+                    # Try to get the higher resolution original image
+                    if 'originalimage' in data and 'source' in data['originalimage']:
+                        return data['originalimage']['source']
+                    return data['thumbnail']['source']
+                    
+            return ""
+            
+        except Exception as e:
+            logger.info(f"Wikipedia image error: {str(e)[:50]}...")
+            return ""
+
+    def _is_valid_image_url(self, url):
+        """Simple check if a URL appears to be an image"""
+        if not url:
+            return False
+            
+        # Check if URL has an image file extension
+        image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+        return any(url.lower().endswith(ext) for ext in image_extensions)
+
+    def _extract_image_from_page(self, url, name):
+        """Extract a likely politician image from a webpage"""
+        try:
+            content = self._scrape_with_requests(url)
+            soup = BeautifulSoup(content, 'html.parser')
+            
+            # Look for images that might be the politician
+            for img in soup.find_all('img'):
+                src = img.get('src', '')
+                if not src:
+                    continue
+                    
+                # Convert relative URL to absolute if needed
+                if src.startswith('/'):
+                    parsed_url = urlparse(url)
+                    src = f"{parsed_url.scheme}://{parsed_url.netloc}{src}"
+                    
+                # Skip tiny images (likely icons)
+                width = img.get('width')
+                height = img.get('height')
+                if width and height and (int(width) < 100 or int(height) < 100):
+                    continue
+                    
+                # Look for images that might contain the politician's name or relevant terms
+                alt_text = img.get('alt', '').lower()
+                name_parts = name.lower().split()
+                
+                # Check if all parts of the name appear in the alt text or src
+                if all(part in alt_text or part in src.lower() for part in name_parts):
+                    return src
+                    
+                # Check for common politician image indicators
+                relevant_terms = ['portrait', 'headshot', 'photo', 'profile', 'politician']
+                if any(term in alt_text or term in src.lower() for term in relevant_terms):
+                    return src
+                    
+            return ""
+            
+        except Exception as e:
+            logger.info(f"Error extracting image: {str(e)[:50]}...")
+            return ""

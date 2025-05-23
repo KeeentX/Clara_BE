@@ -8,6 +8,9 @@ class Politician(models.Model):
     """
     name = models.CharField(max_length=200)
     image_url = models.URLField(blank=True, null=True)
+    party = models.CharField(max_length=200, blank=True)
+    bio = models.TextField(blank=True)
+    issues = models.TextField(blank=True)  # Changed from JSONField to TextField
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -21,7 +24,6 @@ class Politician(models.Model):
     def get_latest_research(self):
         """Get the most recent research for this politician"""
         return self.research_results.order_by('-created_at').first()
-
 
 class ResearchResult(models.Model):
     """
