@@ -55,18 +55,12 @@ run_clara.bat
 ## API Endpoints
 
 ### Research Endpoints
-- The research API endpoints are defined in the `research` app. See `research/urls.py` for details.
+- `/api/research/<name>/` (GET, POST): Research a politician by name. Returns research data, can force new research with POST.
 
 ### Authentication Endpoints
 - `/api/auth/register/` - Register a new user (POST)
-  - Required fields: `first_name`, `last_name`, `username`, `password`
-  - Returns: User details and JWT tokens
 - `/api/auth/login/` - Login with username and password (POST)
-  - Required fields: `username`, `password`
-  - Returns: User details and JWT tokens
 - `/api/auth/token/refresh/` - Refresh an expired access token (POST)
-  - Required fields: `refresh` (the refresh token)
-  - Returns: New access token
 
 ## Notes
 - Make sure to keep your `.env` file secure and never commit it to version control.
