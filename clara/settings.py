@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     # my apps
     'research',
     'accounts',
+    'chat',
 ]
 
 # REST Framework settings
@@ -77,7 +78,10 @@ SIMPLE_JWT = {
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
     'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'AUTH_TOKEN_CLASSES': (
+        'rest_framework_simplejwt.tokens.AccessToken',
+        'rest_framework_simplejwt.tokens.RefreshToken',
+    ),
     'TOKEN_TYPE_CLAIM': 'token_type',
     'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
     'JTI_CLAIM': 'jti',
@@ -169,6 +173,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # get from env
 load_dotenv()
 GEMINI_API_Key = os.environ.get("GEMINI_API_KEY")
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

@@ -62,6 +62,12 @@ run_clara.bat
 - `/api/auth/login/` - Login with username and password (POST)
 - `/api/auth/token/refresh/` - Refresh an expired access token (POST)
 
+### Chat Endpoints
+- `/api/chat/chats/` - Create a new chat (POST) or get all chats for authenticated user (GET)
+- `/api/chat/chats/<chat_id>/` - Delete a specific chat (DELETE)
+- `/api/chat/temporary-chats/<chat_id>/` - Get a temporary chat by ID (GET)
+- `/api/chat/questions/` - Create a new question and get an answer (POST)
+
 ## Notes
 - Make sure to keep your `.env` file secure and never commit it to version control.
 - For production, set `DEBUG = False` and configure `ALLOWED_HOSTS` in `clara/settings.py`.
