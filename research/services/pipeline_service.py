@@ -53,26 +53,52 @@ class ResearchPipeline:
             llm_service=self.llm_service
         )
     
-    def research_politician(self, name, position):
+    def research_politician(self, name, position, max_age = 7):
         """
         Research a politician using the pipeline.
         
         Parameters:
-        - name: Politician name
+        - name: Politician name (will be normalized)
         - position: Required position for this research
-        
+    
         Returns:
         - ResearchResult instance with the analysis
         """
         try:
             logger.info(f"Starting research pipeline for politician: {name} ({position})")
             
-            # Step 1: Get or create politician
+            # Step 0: Normalize the politician name
+            search_service = SearchService()
+            normalized_name, wiki_url = search_service.normalize_politician_name(name, position)
+            
+            if normalized_name != name:
+                logger.info(f"Using normalized name: {normalized_name} (original: {name})")
+                name = normalized_name
+            
+            # Step 1: Get or create politician using normalized name
             politician, created = Politician.objects.get_or_create(name=name)
             if created:
                 logger.info(f"Created new politician record: {name}")
             else:
                 logger.info(f"Using existing politician record: {name}")
+
+                 # Step 1.2: Check if recent research already exists
+                try:
+                    existing_research = ResearchResult.objects.filter(
+                        politician=politician,
+                        position__iexact=position
+                    ).order_by('-created_at').first()
+                    
+                    if existing_research and existing_research.is_recent(days=max_age):
+                        logger.info(f"Found recent research ({(timezone.now() - existing_research.created_at).days} days old) - returning existing result")
+                        return existing_research
+                    else:
+                        if existing_research:
+                            logger.info(f"Found existing research but it's too old ({(timezone.now() - existing_research.created_at).days} days) - will create new research")
+                        else:
+                            logger.info(f"No existing research found for position '{position}' - will create new research")
+                except Exception as e:
+                    logger.warning(f"Error checking for existing research: {str(e)}")
 
             # Step 1.5: Enrich politician with basic info if needed
             if created or not politician.party or not politician.image_url:
@@ -86,7 +112,7 @@ class ResearchPipeline:
             # Step 3: Search for content
             all_search_results = []
             for query in search_queries:
-                results = self.search_service.search(query, num_results=3)
+                results = self.search_service.search(query, num_results=2)
                 if results:
                     for result in results:
                         result['query'] = query  # Track which query led to this result
@@ -199,4 +225,3 @@ class ResearchPipeline:
                 "position": position,
                 "error": str(e)
             }
-    
