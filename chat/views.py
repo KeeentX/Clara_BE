@@ -185,6 +185,10 @@ class QuestionView(APIView):
                 question=question,
                 answer=answer
             )
+
+            # LLM API call should be made to get teh actual answer
+
+            # After getting the answer from LLM API, update the QandA object
             
             serializer = QandASerializer(qanda)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
