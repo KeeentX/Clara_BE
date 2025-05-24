@@ -190,7 +190,206 @@ Research a politician by name. Returns cached research if available and recent, 
 
 ---
 
+# Chat API Endpoint Details
+
+## 1. Create a New Chat
+- **URL:** `/api/chat/chats/`
+- **Method:** POST
+- **Authentication:** Optional (JWT Refresh Token)
+- **Description:** Create a new chat about a politician. If authenticated, the chat will be associated with the user. If not, it will be a temporary chat.
+
+### Request Body (JSON)
+```
+{
+  "politician": "string",
+  "position": "string"  // optional
+}
+```
+
+### Success Response
+- **Code:** 201 CREATED
+- **Content:**
+```
+{
+  "id": int,
+  "politician": "string",
+  "user": int or null,
+  "created_at": "datetime string",
+  "research_report": int or null,
+  "qanda_set": []
+}
+```
+
+### Error Response
+- **Code:** 400 BAD REQUEST
+- **Content:**
+```
+{
+  "error": "Politician name is required"
+}
+```
+
+---
+
+## 2. Get All Chats (Authenticated Users Only)
+- **URL:** `/api/chat/chats/`
+- **Method:** GET
+- **Authentication:** Required (JWT Refresh Token)
+- **Description:** Retrieve all chats associated with the authenticated user.
+
+### Success Response
+- **Code:** 200 OK
+- **Content:**
+```
+[
+  {
+    "id": int,
+    "politician": "string",
+    "user": int,
+    "created_at": "datetime string",
+    "research_report": int or null,
+    "qanda_set": [
+      {
+        "id": int,
+        "chat": int,
+        "question": "string",
+        "answer": "string",
+        "created_at": "datetime string"
+      }
+    ]
+  }
+]
+```
+
+### Error Response
+- **Code:** 401 UNAUTHORIZED
+- **Content:**
+```
+{
+  "error": "Authentication required to view chats"
+}
+```
+
+---
+
+## 3. Get Temporary Chat
+- **URL:** `/api/chat/temporary-chats/<chat_id>/`
+- **Method:** GET
+- **Authentication:** None
+- **Description:** Retrieve a temporary chat (no user association) by its ID.
+
+### Success Response
+- **Code:** 200 OK
+- **Content:**
+```
+{
+  "id": int,
+  "politician": "string",
+  "user": null,
+  "created_at": "datetime string",
+  "research_report": int or null,
+  "qanda_set": [
+    {
+      "id": int,
+      "chat": int,
+      "question": "string",
+      "answer": "string",
+      "created_at": "datetime string"
+    }
+  ]
+}
+```
+
+### Error Response
+- **Code:** 404 NOT FOUND
+- **Content:**
+```
+{
+  "error": "Temporary chat not found"
+}
+```
+
+---
+
+## 4. Delete Chat
+- **URL:** `/api/chat/chats/<chat_id>/`
+- **Method:** DELETE
+- **Authentication:** Optional (JWT Refresh Token)
+- **Description:** Delete a chat. Authenticated users can only delete their own chats. Unauthenticated users can only delete temporary chats.
+
+### Success Response
+- **Code:** 204 NO CONTENT
+
+### Error Responses
+- **Code:** 404 NOT FOUND
+- **Content:**
+```
+{
+  "error": "Chat not found"
+}
+```
+- **Code:** 403 FORBIDDEN
+- **Content:**
+```
+{
+  "error": "You can only delete your own chats"
+}
+```
+- **Code:** 401 UNAUTHORIZED
+- **Content:**
+```
+{
+  "error": "Authentication required to delete this chat"
+}
+```
+
+---
+
+## 5. Create Question and Answer
+- **URL:** `/api/chat/questions/`
+- **Method:** POST
+- **Authentication:** None
+- **Description:** Create a new question and get an answer for a specific chat.
+
+### Request Body (JSON)
+```
+{
+  "chat_id": int,
+  "question": "string"
+}
+```
+
+### Success Response
+- **Code:** 201 CREATED
+- **Content:**
+```
+{
+  "id": int,
+  "chat": int,
+  "question": "string",
+  "answer": "string",
+  "created_at": "datetime string"
+}
+```
+
+### Error Responses
+- **Code:** 400 BAD REQUEST
+- **Content:**
+```
+{
+  "error": "Chat ID and question are required"
+}
+```
+- **Code:** 404 NOT FOUND
+- **Content:**
+```
+{
+  "error": "Chat not found"
+}
+```
+
+---
+
 ## Notes
 - All endpoints return JSON responses.
 - Use the `Authorization: Bearer <access_token>` header for authenticated requests where required.
-
