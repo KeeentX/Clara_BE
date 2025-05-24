@@ -10,7 +10,7 @@ REM Install dependencies
 pip install -r requirements.txt
 
 REM Apply migrations
-py manage.py migrate
+python manage.py migrate
 
 REM Run the development server
-py manage.py runserver
+python manage.py runserver
