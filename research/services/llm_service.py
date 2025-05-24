@@ -383,3 +383,44 @@ class LLMService:
         
         stances = result.get("response", "").strip()
         return stances
+
+    def answer_user_question(self, question: str, content_list: List[str]) -> str:
+        """
+        Answer a user's question using the provided context.
+        """
+        logger.info(f"Answering user question: {question}")
+        if not content_list:
+            logger.warning("No context provided for question answering")
+            return "Sorry, I don't have enough information to answer that."
+        
+        # Prepare context for the LLM (truncate if too long)
+        context_text = self._prepare_content_for_analysis(content_list, max_chars=1000000)
+        
+        # Construct a focused QA prompt
+        prompt = f"""
+        Use the following context to answer the question.
+
+        CONTEXT:
+        {context_text}
+
+        QUESTION:
+        {question}
+
+        If you can answer based on the context, respond with:
+        ANSWER:
+        <your concise answer>
+
+        If you cannot answer based on the context, respond with:
+        SEARCH_QUERY:
+        <one-line web search query that would help find the answer>
+
+        Only output the tag (ANSWER or SEARCH_QUERY) and its content, nothing else.
+        """
+
+        # Query the LLM
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error in user question answering: {result['error']}")
+            return "An error occurred while generating the answer."
+        
+        return result.get("response", "").strip()

@@ -8,6 +8,8 @@ from .models import Chat, QandA
 from .serializers import ChatSerializer, QandASerializer
 from research.models import ResearchResult, Politician
 from accounts.auth_utils import get_user_from_token
+from research.services.llm_service import LLMService
+from research.services.search_service import SearchService
 
 class ChatView(APIView):
     """
@@ -176,20 +178,64 @@ class QuestionView(APIView):
         try:
             chat = Chat.objects.get(id=chat_id)
             
-            # Create a default answer
-            answer = f"This is a default answer for your question: {question}"
-            
-            # Create the Q&A
-            qanda = QandA.objects.create(
-                chat=chat,
-                question=question,
-                answer=answer
-            )
+            # Gather saved research as initial context
+            context_contents = []
+            if chat.research_report and getattr(chat.research_report, 'sources', None):
+                context_contents = [
+                    src['content']
+                    for src in chat.research_report.sources
+                    if src.get('content')
+                ]
 
-            # LLM API call should be made to get teh actual answer
+            # Include previous Q&A pairs as conversational history
+            previous_messages = []
+            for qa in chat.qanda_set.all().order_by('created_at'):
+                # only include completed Q&A
+                if qa.answer:
+                    previous_messages.append(
+                        f"User: {qa.question}\nAssistant: {qa.answer}"
+                    )
+            context_contents.extend(previous_messages)
 
-            # After getting the answer from LLM API, update the QandA object
-            
+            llm = LLMService()
+            # 1) Ask LLM to either answer or provide a search query
+            first = llm.answer_user_question(question, context_contents)
+
+            if first.startswith("SEARCH_QUERY:"):
+                # 2) Perform the suggested search
+                query_text = first.split("SEARCH_QUERY:", 1)[1].strip()
+                searcher = SearchService()
+                addl = []
+                for res in (searcher.search(query_text, num_results=3) or []):
+                    try:
+                        c = searcher.fetch_content(res['url'])
+                        if c:
+                            addl.append(c)
+                    except Exception:
+                        continue
+                # 3) Re-ask with expanded context
+                expanded = context_contents + addl
+                second = llm.answer_user_question(question, expanded)
+                # strip off the ANSWER: tag if present
+                if second.startswith("ANSWER:"):
+                    final = second.split("ANSWER:", 1)[1].strip()
+                else:
+                    final = second
+            else:
+                # Direct answer path
+                if first.startswith("ANSWER:"):
+                    final = first.split("ANSWER:", 1)[1].strip()
+                else:
+                    final = first
+
+            # --- ADD FALLBACK FOR UNRESOLVED SEARCH QUERIES ---
+            if final.startswith("SEARCH_QUERY:"):
+                final = "I don't know."
+
+            # Persist and return
+            qanda = QandA.objects.create(chat=chat, question=question, answer=final or "")
+            qanda.save()
+
             serializer = QandASerializer(qanda)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
             
