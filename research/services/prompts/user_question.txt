@@ -1,0 +1,17 @@
+Use the following context to answer the question.
+
+CONTEXT:
+{context_text}
+
+QUESTION:
+{question}
+
+If you can answer based on the context, respond with:
+ANSWER:
+<your concise answer>
+
+If you cannot answer based on the context, respond with:
+SEARCH_QUERY:
+<one-line web search query that would help find the answer>
+
+Only output the tag (ANSWER or SEARCH_QUERY) and its content, nothing else.
