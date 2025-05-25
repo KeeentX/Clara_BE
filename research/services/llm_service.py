@@ -273,30 +273,20 @@ class LLMService:
         - Party name as a string
         """
         logger.info(f"Extracting party affiliation for: {name}")
-        
         if not content_list:
             return ""
-        
         content_text = self._prepare_content_for_analysis(content_list, max_chars=30000)
-        
-        prompt = f"""
-        Identify the political party of {name}, who serves as {position}.
-
-        INFORMATION:
-        {content_text}
-
-        Extract ONLY the name of the political party. Return ONLY the party name with no additional text.
-        If multiple parties are mentioned, return only the current or most recent party.
-        If no clear party is mentioned, or if they are independent, respond with "Independent".
-        """
-        
+        prompt = self.prompt_service.get_prompt(
+            'party_affiliation',
+            name=name,
+            position=position,
+            content_text=content_text
+        )
         result = self.query(prompt)
         if "error" in result:
             logger.error(f"Error extracting party: {result['error']}")
             return ""
-        
-        party = result.get("response", "").strip()
-        return party
+        return result.get("response", "").strip()
 
     def extract_short_bio(self, name: str, position: str, content_list: List[str]) -> str:
         """
@@ -311,31 +301,20 @@ class LLMService:
         - Short biography text (1-2 paragraphs)
         """
         logger.info(f"Extracting short bio for: {name}")
-        
         if not content_list:
             return ""
-        
         content_text = self._prepare_content_for_analysis(content_list, max_chars=30000)
-        
-        prompt = f"""
-        Create a concise biography for {name}, who serves as {position}.
-
-        INFORMATION:
-        {content_text}
-
-        Write a short, factual biography of {name} in 1-2 paragraphs (maximum 150 words).
-        Include key career milestones, education, and notable achievements.
-        Focus on objective facts rather than subjective assessments.
-        Do not include citations or references in the bio.
-        """
-        
+        prompt = self.prompt_service.get_prompt(
+            'short_bio',
+            name=name,
+            position=position,
+            content_text=content_text
+        )
         result = self.query(prompt)
         if "error" in result:
             logger.error(f"Error extracting bio: {result['error']}")
             return ""
-        
-        bio = result.get("response", "").strip()
-        return bio
+        return result.get("response", "").strip()
 
     def extract_policy_stances(self, name: str, position: str, content_list: List[str]) -> str:
         """
@@ -350,39 +329,20 @@ class LLMService:
         - String containing policy stances in markdown format
         """
         logger.info(f"Extracting policy stances for: {name}")
-        
         if not content_list:
             return ""
-        
         content_text = self._prepare_content_for_analysis(content_list, max_chars=40000)
-        
-        prompt = f"""
-        Identify the key policy positions of {name}, who serves as {position}.
-
-        INFORMATION:
-        {content_text}
-
-        Extract 5-10 key policy positions. For each policy area, provide a concise description of their stance.
-        
-        Format your response as a markdown bullet list with each entry in the following format:
-        - **[Issue Name]**: [Brief description of their stance on this issue]
-        
-        For example:
-        - **Healthcare**: Supports universal healthcare with expanded coverage for low-income families.
-        - **Education**: Advocates for increased teacher salaries and modernizing school infrastructure.
-        
-        Only include the bullet list in your response, with no introduction or conclusion.
-        Use clear issue names like Healthcare, Taxation, Climate Change, Education, etc.
-        Each stance should be a single sentence or short paragraph describing their position.
-        """
-        
+        prompt = self.prompt_service.get_prompt(
+            'policy_stances',
+            name=name,
+            position=position,
+            content_text=content_text
+        )
         result = self.query(prompt)
         if "error" in result:
             logger.error(f"Error extracting policy stances: {result['error']}")
             return ""
-        
-        stances = result.get("response", "").strip()
-        return stances
+        return result.get("response", "").strip()
 
     def answer_user_question(self, question: str, content_list: List[str]) -> str:
         """
@@ -392,35 +352,14 @@ class LLMService:
         if not content_list:
             logger.warning("No context provided for question answering")
             return "Sorry, I don't have enough information to answer that."
-        
-        # Prepare context for the LLM (truncate if too long)
         context_text = self._prepare_content_for_analysis(content_list, max_chars=1000000)
-        
-        # Construct a focused QA prompt
-        prompt = f"""
-        Use the following context to answer the question.
-
-        CONTEXT:
-        {context_text}
-
-        QUESTION:
-        {question}
-
-        If you can answer based on the context, respond with:
-        ANSWER:
-        <your concise answer>
-
-        If you cannot answer based on the context, respond with:
-        SEARCH_QUERY:
-        <one-line web search query that would help find the answer>
-
-        Only output the tag (ANSWER or SEARCH_QUERY) and its content, nothing else.
-        """
-
-        # Query the LLM
+        prompt = self.prompt_service.get_prompt(
+            'user_question',
+            question=question,
+            context_text=context_text
+        )
         result = self.query(prompt)
         if "error" in result:
             logger.error(f"Error in user question answering: {result['error']}")
             return "An error occurred while generating the answer."
-        
         return result.get("response", "").strip()

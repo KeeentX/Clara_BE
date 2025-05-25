@@ -1,0 +1,8 @@
+Identify the political party of {name}, who serves as {position}.
+
+INFORMATION:
+{content_text}
+
+Extract ONLY the name of the political party. Return ONLY the party name with no additional text.
+If multiple parties are mentioned, return only the current or most recent party.
+If no clear party is mentioned, or if they are independent, respond with "Independent".

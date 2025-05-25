@@ -1,0 +1,17 @@
+Identify the key policy positions of {name}, who serves as {position}.
+
+INFORMATION:
+{content_text}
+
+Extract 5-10 key policy positions. For each policy area, provide a concise description of their stance.
+
+Format your response as a markdown bullet list with each entry in the following format:
+- **[Issue Name]**: [Brief description of their stance on this issue]
+
+For example:
+- **Healthcare**: Supports universal healthcare with expanded coverage for low-income families.
+- **Education**: Advocates for increased teacher salaries and modernizing school infrastructure.
+
+Only include the bullet list in your response, with no introduction or conclusion.
+Use clear issue names like Healthcare, Taxation, Climate Change, Education, etc.
+Each stance should be a single sentence or short paragraph describing their position.
