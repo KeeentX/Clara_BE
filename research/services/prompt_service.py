@@ -19,12 +19,19 @@ class PromptService:
         """
         self.prompts_dir = prompts_dir or getattr(settings, 'PROMPTS_DIR', None) or os.path.join('services', 'prompts')
         logger.info(f"Initializing Prompt Service with directory: {self.prompts_dir}")
-        
+
         # Define prompt mappings
         self.prompt_map = {
             'politician_analysis': 'politician_analysis.txt',
+            'politician_summary': 'politician_summary.txt',
+            'politician_criticisms': 'politician_criticisms.txt',
+            'politician_accomplishments': 'politician_accomplishments.txt',
+            'politician_background': 'politician_background.txt',
+            'party_affiliation': 'party_affiliation.txt',
+            'short_bio': 'short_bio.txt',
+            'policy_stances': 'policy_stances.txt',
+            'user_question': 'user_question.txt',
         }
-        
         logger.info("Prompt Service initialized successfully")
     
     def load_prompt(self, prompt_name: str) -> str:

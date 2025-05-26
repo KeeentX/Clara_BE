@@ -34,6 +34,14 @@ def research_politician(request, name):
     
     # Get parameters from query string
     position = request.GET.get('position', '')
+
+    if not position:
+        logger.error("Position parameter is required but not provided.")
+        return Response({
+            'success': False,
+            'error': "Position parameter is required."
+        }, status=400)
+
     max_age = int(request.GET.get('max_age', 7))
     include_sources = request.GET.get('include_sources', '').lower() == 'true'
     detailed = request.GET.get('detailed', '').lower() == 'true'
@@ -44,20 +52,25 @@ def research_politician(request, name):
 
     try:
         # Try to find the politician in the database
-        filters = {'name__iexact': normalized_name}
-        if position:
-            filters['position__iexact'] = position
-            
         try:
-            politician = Politician.objects.get(**filters)
+            # Find politician by name only
+            politician = Politician.objects.get(name__iexact=normalized_name)
             logger.info(f"Found politician in database: {politician.name}")
             
-            # Check if we have recent research or if forced refresh requested
+            # Check if we have recent research for this politician and position
             latest_research = None
             try:
-                latest_research = ResearchResult.objects.filter(
-                    politician=politician
-                ).order_by('-created_at').first()
+                if position:
+                    # Filter by both politician and position
+                    latest_research = ResearchResult.objects.filter(
+                        politician=politician,
+                        position__iexact=position
+                    ).order_by('-created_at').first()
+                else:
+                    # Get the latest research for this politician regardless of position
+                    latest_research = ResearchResult.objects.filter(
+                        politician=politician
+                    ).order_by('-created_at').first()
             except Exception as e:
                 logger.error(f"Error retrieving latest research: {str(e)}")
             
@@ -72,9 +85,9 @@ def research_politician(request, name):
                 research_result = latest_research
             else:
                 # Conduct new research
-                logger.info(f"Conducting new research for {politician.name}")
+                logger.info(f"Conducting new research for {politician.name}, position: {position}")
                 pipeline = ResearchPipeline()
-                research_result = pipeline.research_politician(politician.name, politician.position)
+                research_result = pipeline.research_politician(politician.name, position)
                 
         except Politician.DoesNotExist:
             # Politician not found, conduct new research
@@ -92,13 +105,7 @@ def research_politician(request, name):
             # Process response according to parameters
             if not include_sources and 'sources' in response_data:
                 del response_data['sources']
-                
-            # if not detailed:
-            #     # Truncate long text fields for a summary view
-            #     for field in ['background', 'accomplishments', 'criticisms']:
-            #         if field in response_data and len(response_data[field]) > 300:
-            #             response_data[field] = response_data[field][:300] + '...'
-            
+                            
             # Add metadata
             response_data['metadata'] = {
                 'is_fresh': (timezone.now() - research_result.created_at).days < max_age,
@@ -145,4 +152,67 @@ def research_politician(request, name):
             'error': f"An unexpected error occurred: {str(e)}",
             'name': normalized_name,
             'position': position
+        }, status=500)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_view(['GET'])
+def get_research_report(request, report_id):
+    """
+    API endpoint to retrieve a research report by its ID.
+    
+    Parameters:
+    - report_id: The ID of the research report to retrieve
+    - include_sources: Whether to include sources in response (default: False)
+    """
+    logger.info(f"Request for research report: {report_id}")
+    
+    include_sources = request.query_params.get('include_sources', '').lower() == 'true'
+    
+    try:
+        # Try to find the research report in the database
+        research_report = ResearchResult.objects.get(id=report_id)
+        
+        # Serialize the report
+        serializer = ResearchResultSerializer(research_report)
+        response_data = serializer.data
+        
+        # Process response according to parameters
+        if include_sources and 'sources' in response_data:
+            # Filter out problematic sources with corrupt content
+            if isinstance(response_data['sources'], list):
+                filtered_sources = []
+                for source in response_data['sources']:
+                    # Check if content appears to be binary or corrupt
+                    if source.get('content') and isinstance(source['content'], str):
+                        # Filter out sources with binary content or very short corrupt content
+                        if not (source['content'].startswith('����') or 
+                                any(c for c in source['content'] if ord(c) > 127 and ord(c) < 32)):
+                            filtered_sources.append(source)
+                    else:
+                        # Keep sources without content or with null content
+                        filtered_sources.append(source)
+                response_data['sources'] = filtered_sources
+        elif not include_sources and 'sources' in response_data:
+            del response_data['sources']
+                    
+        # Add metadata
+        response_data['metadata'] = {
+            'age_days': (timezone.now() - research_report.created_at).days,
+        }
+        
+        return Response(response_data)
+        
+    except ResearchResult.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Research report not found',
+        }, status=404)
+        
+    except Exception as e:
+        # Handle any unexpected errors
+        logger.error(f"Unexpected error retrieving research report: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': f"An unexpected error occurred: {str(e)}",
         }, status=500)

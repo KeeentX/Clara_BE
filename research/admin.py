@@ -3,9 +3,9 @@ from .models import Politician, ResearchResult
 
 @admin.register(Politician)
 class PoliticianAdmin(admin.ModelAdmin):
-    list_display = ('name', 'position', 'created_at')
-    search_fields = ('name', 'position')
-    list_filter = ('position', 'created_at')
+    list_display = ('name', 'created_at')
+    search_fields = ('name',)
+    list_filter = ('created_at',)
     date_hierarchy = 'created_at'
     
     # Show research results in the politician detail view
@@ -18,14 +18,14 @@ class PoliticianAdmin(admin.ModelAdmin):
 
 @admin.register(ResearchResult)
 class ResearchResultAdmin(admin.ModelAdmin):
-    list_display = ('politician', 'created_at', 'updated_at', 'has_background', 'has_accomplishments', 'has_criticisms', 'has_summary')
-    list_filter = ('created_at', 'updated_at')
-    search_fields = ('politician__name', 'background', 'accomplishments', 'criticisms', 'summary')
+    list_display = ('politician', 'position', 'created_at', 'updated_at', 'has_background', 'has_accomplishments', 'has_criticisms', 'has_summary')
+    list_filter = ('position', 'created_at', 'updated_at')
+    search_fields = ('politician__name', 'position', 'background', 'accomplishments', 'criticisms', 'summary')
     readonly_fields = ('created_at', 'updated_at')
     date_hierarchy = 'created_at'
     fieldsets = (
         ('Politician', {
-            'fields': ('politician',)
+            'fields': ('politician', 'position')
         }),
         ('Research Data', {
             'fields': ('background', 'accomplishments', 'criticisms', 'summary'),

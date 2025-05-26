@@ -1,0 +1,9 @@
+Create a concise biography for {name}, who serves as {position}.
+
+INFORMATION:
+{content_text}
+
+Write a short, factual biography of {name} in 1-2 paragraphs (maximum 150 words).
+Include key career milestones, education, and notable achievements.
+Focus on objective facts rather than subjective assessments.
+Do not include citations or references in the bio.

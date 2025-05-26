@@ -45,7 +45,6 @@ class LLMService:
         
         logger.info("LLM Service initialized successfully")
         
-    # The query method remains unchanged
     def query(self, prompt: str) -> Dict[str, Any]:
         """
         Send a query to the Gemini LLM.
@@ -101,11 +100,10 @@ class LLMService:
                 "response": "Error occurred during LLM query",
                 "error": str(e)
             }
-        
-    # Modified to use the PromptService
-    def analyze_politician(self, name: str, position: str, content_list: List[str]) -> Dict[str, Any]:
+    
+    def analyze_politician_background(self, name: str, position: str, content_list: List[str]) -> str:
         """
-        Analyze information about a politician using Gemini.
+        Analyze the background of a politician using Gemini.
         
         Parameters:
         - name: Politician name
@@ -113,86 +111,255 @@ class LLMService:
         - content_list: List of text content to analyze
         
         Returns:
-        - Dictionary containing background, accomplishments, criticisms, and summary judgment
+        - String containing background information
         """
-        logger.info(f"Analyzing politician: {name} ({position})")
-        logger.info(f"Number of content sources: {len(content_list)}")
+        logger.info(f"Analyzing background for politician: {name} ({position})")
         
         # Check if we have enough content to analyze
         if not content_list:
-            logger.warning("No content provided for analysis")
-            return {
-                "background": f"No information available for {name}.",
-                "accomplishments": "No information available.",
-                "criticisms": "No information available.",
-                "summary": "Insufficient information to form a judgment.",
-                "error": "No content provided for analysis",
-                "sources": []
-            }
+            logger.warning("No content provided for background analysis")
+            return f"No background information available for {name}."
         
         # Format the content for analysis
-        content_text = "\n\n".join([f"Document {i+1}: {content[:5000]}" for i, content in enumerate(content_list)])
-        logger.info(f"Total content length for analysis: {len(content_text)} characters")
+        content_text = self._prepare_content_for_analysis(content_list)
         
-        # Trim if too long
-        if len(content_text) > 100000:
-            logger.warning(f"Content too long ({len(content_text)} chars), trimming to 100,000 chars")
-            content_text = content_text[:100000] + "... [content truncated due to length]"
-        
-        # Get the prompt from the PromptService
+        # Get the prompt
         prompt = self.prompt_service.get_prompt(
-            'politician_analysis',
+            'politician_background',
             name=name,
             position=position,
             content_text=content_text
         )
         
-        # Use the query method to perform the analysis
-        logger.info("Sending politician analysis query to LLM")
+        # Query the LLM
         result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error in background analysis: {result['error']}")
+            return f"Background analysis for {name} could not be completed due to an error: {result['error']}"
         
-        try:
-            # Parse the JSON from the response
-            import json
-            response_text = result.get("response", "{}")
-            logger.info("Parsing JSON response from LLM")
-            
-            # Extract JSON if it's embedded in markdown or other text
-            if "```json" in response_text:
-                json_text = response_text.split("```json")[1].split("```")[0].strip()
-                logger.debug("Extracted JSON from markdown code block with json syntax")
-            elif "```" in response_text:
-                json_text = response_text.split("```")[1].split("```")[0].strip()
-                logger.debug("Extracted JSON from markdown code block")
-            else:
-                json_text = response_text
-                logger.debug("Using raw response as JSON")
-                
-            parsed_response = json.loads(json_text)
-            logger.info("Successfully parsed JSON response")
-            
-            analysis_result = {
-                "background": parsed_response.get("background", "No background information available."),
-                "accomplishments": parsed_response.get("accomplishments", "No accomplishments listed."),
-                "criticisms": parsed_response.get("criticisms", "No criticisms found."),
-                "summary": parsed_response.get("summary", "No summary judgment available."),
-                "sources": [{"title": f"Document {i+1}", "content": content[:100] + "..."} 
-                           for i, content in enumerate(content_list)]
-            }
-            
-            logger.info(f"Analysis complete for {name}")
-            return analysis_result
-            
-        except Exception as e:
-            logger.error(f"Error parsing LLM response: {str(e)}")
-            logger.debug(f"Failed response text: {result.get('response')[:500]}...")
-            
-            # Fallback in case of parsing errors
-            return {
-                "background": f"Background for {name}, who serves as {position}.",
-                "accomplishments": "Information could not be parsed correctly.",
-                "criticisms": "Information could not be parsed correctly.",
-                "summary": "Could not generate a summary judgment due to parsing errors.",
-                "error": str(e),
-                "raw_response": result.get("response")
-            }
+        return result.get("response", f"No background information available for {name}.")
+    
+    def analyze_politician_accomplishments(self, name: str, position: str, content_list: List[str]) -> str:
+        """
+        Analyze the accomplishments of a politician using Gemini.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - content_list: List of text content to analyze
+        
+        Returns:
+        - String containing accomplishments in markdown bullet format
+        """
+        logger.info(f"Analyzing accomplishments for politician: {name} ({position})")
+        
+        if not content_list:
+            logger.warning("No content provided for accomplishments analysis")
+            return "No accomplishments information available."
+        
+        content_text = self._prepare_content_for_analysis(content_list)
+        
+        prompt = self.prompt_service.get_prompt(
+            'politician_accomplishments',
+            name=name,
+            position=position,
+            content_text=content_text
+        )
+        
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error in accomplishments analysis: {result['error']}")
+            return f"Accomplishments analysis for {name} could not be completed due to an error: {result['error']}"
+        
+        return result.get("response", "No accomplishments information available.")
+    
+    def analyze_politician_criticisms(self, name: str, position: str, content_list: List[str]) -> str:
+        """
+        Analyze the criticisms of a politician using Gemini.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - content_list: List of text content to analyze
+        
+        Returns:
+        - String containing criticisms in markdown bullet format
+        """
+        logger.info(f"Analyzing criticisms for politician: {name} ({position})")
+        
+        if not content_list:
+            logger.warning("No content provided for criticisms analysis")
+            return "No criticisms information available."
+        
+        content_text = self._prepare_content_for_analysis(content_list)
+        
+        prompt = self.prompt_service.get_prompt(
+            'politician_criticisms',
+            name=name,
+            position=position,
+            content_text=content_text
+        )
+        
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error in criticisms analysis: {result['error']}")
+            return f"Criticisms analysis for {name} could not be completed due to an error: {result['error']}"
+        
+        return result.get("response", "No criticisms information available.")
+    
+    def analyze_politician_summary(self, name: str, position: str, background: str, accomplishments: str, criticisms: str, content_list: List[str]) -> str:
+        """
+        Create a summary judgment for a politician using all prior analyses.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - background: Background analysis text
+        - accomplishments: Accomplishments analysis text
+        - criticisms: Criticisms analysis text
+        - content_list: List of text content for additional context
+        
+        Returns:
+        - String containing the summary judgment
+        """
+        logger.info(f"Creating summary judgment for politician: {name} ({position})")
+        
+        # Use a smaller subset of content for additional context if provided
+        content_text = ""
+        if content_list:
+            # Use just a small sample for additional context since we already have the analyses
+            sample_content = content_list[:min(3, len(content_list))]
+            content_text = self._prepare_content_for_analysis(sample_content, max_chars=20000)
+        
+        prompt = self.prompt_service.get_prompt(
+            'politician_summary',
+            name=name,
+            position=position,
+            background=background,
+            accomplishments=accomplishments,
+            criticisms=criticisms,
+            content_text=content_text
+        )
+        
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error in summary judgment: {result['error']}")
+            return f"Summary judgment for {name} could not be completed due to an error: {result['error']}"
+        
+        return result.get("response", "No summary judgment available.")
+    
+    def _prepare_content_for_analysis(self, content_list: List[str], max_chars: int = 1000000) -> str:
+        """Helper method to prepare content for analysis with consistent formatting"""
+        content_text = "\n\n".join([f"Document {i+1}: {content[:5000]}" for i, content in enumerate(content_list)])
+        logger.info(f"Total content length for analysis: {len(content_text)} characters")
+        
+        # Trim if too long
+        if len(content_text) > max_chars:
+            logger.warning(f"Content too long ({len(content_text)} chars), trimming to {max_chars} chars")
+            content_text = content_text[:max_chars] + "... [content truncated due to length]"
+        
+        return content_text
+    
+    def extract_party_affiliation(self, name: str, position: str, content_list: List[str]) -> str:
+        """
+        Extract the party affiliation of a politician.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - content_list: List of text content to analyze
+        
+        Returns:
+        - Party name as a string
+        """
+        logger.info(f"Extracting party affiliation for: {name}")
+        if not content_list:
+            return ""
+        content_text = self._prepare_content_for_analysis(content_list, max_chars=30000)
+        prompt = self.prompt_service.get_prompt(
+            'party_affiliation',
+            name=name,
+            position=position,
+            content_text=content_text
+        )
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error extracting party: {result['error']}")
+            return ""
+        return result.get("response", "").strip()
+
+    def extract_short_bio(self, name: str, position: str, content_list: List[str]) -> str:
+        """
+        Extract a concise biography for a politician.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - content_list: List of text content to analyze
+        
+        Returns:
+        - Short biography text (1-2 paragraphs)
+        """
+        logger.info(f"Extracting short bio for: {name}")
+        if not content_list:
+            return ""
+        content_text = self._prepare_content_for_analysis(content_list, max_chars=30000)
+        prompt = self.prompt_service.get_prompt(
+            'short_bio',
+            name=name,
+            position=position,
+            content_text=content_text
+        )
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error extracting bio: {result['error']}")
+            return ""
+        return result.get("response", "").strip()
+
+    def extract_policy_stances(self, name: str, position: str, content_list: List[str]) -> str:
+        """
+        Extract key policy positions for a politician.
+        
+        Parameters:
+        - name: Politician name
+        - position: Politician position
+        - content_list: List of text content to analyze
+        
+        Returns:
+        - String containing policy stances in markdown format
+        """
+        logger.info(f"Extracting policy stances for: {name}")
+        if not content_list:
+            return ""
+        content_text = self._prepare_content_for_analysis(content_list, max_chars=40000)
+        prompt = self.prompt_service.get_prompt(
+            'policy_stances',
+            name=name,
+            position=position,
+            content_text=content_text
+        )
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error extracting policy stances: {result['error']}")
+            return ""
+        return result.get("response", "").strip()
+
+    def answer_user_question(self, question: str, content_list: List[str]) -> str:
+        """
+        Answer a user's question using the provided context.
+        """
+        logger.info(f"Answering user question: {question}")
+        if not content_list:
+            logger.warning("No context provided for question answering")
+            return "Sorry, I don't have enough information to answer that."
+        context_text = self._prepare_content_for_analysis(content_list, max_chars=1000000)
+        prompt = self.prompt_service.get_prompt(
+            'user_question',
+            question=question,
+            context_text=context_text
+        )
+        result = self.query(prompt)
+        if "error" in result:
+            logger.error(f"Error in user question answering: {result['error']}")
+            return "An error occurred while generating the answer."
+        return result.get("response", "").strip()

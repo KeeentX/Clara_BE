@@ -8,6 +8,8 @@ from .models import Chat, QandA
 from .serializers import ChatSerializer, QandASerializer
 from research.models import ResearchResult, Politician
 from accounts.auth_utils import get_user_from_token
+from research.services.llm_service import LLMService
+from research.services.search_service import SearchService
 
 class ChatView(APIView):
     """
@@ -27,9 +29,9 @@ class ChatView(APIView):
                 {'error': 'Politician name is required'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-
-        # Get user from token
-        user = request.user
+        
+        # Get user from token if available
+        user = get_user_from_token(request)
 
         # Call the research API to get research report
         try:
@@ -112,7 +114,6 @@ class TemporaryChatView(APIView):
 
 
 class ChatDetailView(APIView):
-    print("ChatDetailView")
     """
     API endpoint for retrieving, updating, and deleting a specific chat.
     """
@@ -164,7 +165,7 @@ class QuestionView(APIView):
         """Create a new question and answer"""
         chat_id = request.data.get('chat_id')
         question = request.data.get('question')
-
+        
         if not chat_id or not question:
             return Response(
                 {'error': 'Chat ID and question are required'}, 
@@ -173,16 +174,64 @@ class QuestionView(APIView):
 
         try:
             chat = Chat.objects.get(id=chat_id)
+            
+            # Gather saved research as initial context
+            context_contents = []
+            if chat.research_report and getattr(chat.research_report, 'sources', None):
+                context_contents = [
+                    src['content']
+                    for src in chat.research_report.sources
+                    if src.get('content')
+                ]
 
-            # Create a default answer
-            answer = f"This is a default answer for your question: {question}"
+            # Include previous Q&A pairs as conversational history
+            previous_messages = []
+            for qa in chat.qanda_set.all().order_by('created_at'):
+                # only include completed Q&A
+                if qa.answer:
+                    previous_messages.append(
+                        f"User: {qa.question}\nAssistant: {qa.answer}"
+                    )
+            context_contents.extend(previous_messages)
 
-            # Create the Q&A
-            qanda = QandA.objects.create(
-                chat=chat,
-                question=question,
-                answer=answer
-            )
+            llm = LLMService()
+            # 1) Ask LLM to either answer or provide a search query
+            first = llm.answer_user_question(question, context_contents)
+
+            if first.startswith("SEARCH_QUERY:"):
+                # 2) Perform the suggested search
+                query_text = first.split("SEARCH_QUERY:", 1)[1].strip()
+                searcher = SearchService()
+                addl = []
+                for res in (searcher.search(query_text, num_results=3) or []):
+                    try:
+                        c = searcher.fetch_content(res['url'])
+                        if c:
+                            addl.append(c)
+                    except Exception:
+                        continue
+                # 3) Re-ask with expanded context
+                expanded = context_contents + addl
+                second = llm.answer_user_question(question, expanded)
+                # strip off the ANSWER: tag if present
+                if second.startswith("ANSWER:"):
+                    final = second.split("ANSWER:", 1)[1].strip()
+                else:
+                    final = second
+            else:
+                # Direct answer path
+                if first.startswith("ANSWER:"):
+                    final = first.split("ANSWER:", 1)[1].strip()
+                else:
+                    final = first
+
+            # --- ADD FALLBACK FOR UNRESOLVED SEARCH QUERIES ---
+            if final.startswith("SEARCH_QUERY:"):
+                final = "I don't know."
+
+            # Persist and return
+            qanda = QandA.objects.create(chat=chat, question=question, answer=final or "")
+            qanda.save()
 
             serializer = QandASerializer(qanda)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -219,6 +268,6 @@ class ChatQandAView(APIView):
 
         except Chat.DoesNotExist:
             return Response(
-                {'error': 'Chat not found or you do not have permission to access it'}, 
+                {'error': 'Chat not found or you do not have permission to access it'},
                 status=status.HTTP_404_NOT_FOUND
             )

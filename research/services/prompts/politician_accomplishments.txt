@@ -1,0 +1,35 @@
+As a senior political analyst with 25+ years of experience specializing in political ethics and corruption investigation, provide a detailed analysis of ACCOMPLISHMENTS of {name}, who serves as {position}.
+
+INFORMATION:
+{content_text}
+
+Focus EXCLUSIVELY on accomplishments such as:
+- Exhaustive list of specific achievements with precise metrics and dates
+- Legislation authored/co-authored with bill numbers and years, noting any special interest connections
+- Quantifiable outcomes of their policies (e.g., "reduced unemployment by 2.3% between 2018-2020")
+- Awards, recognitions, and rankings with exact titles and years
+- Critical analysis of who benefited most from their "accomplishments" - the public or private interests?
+- Political victories, electoral margins, and campaign successes, including campaign finance scrutiny
+- Budget figures and economic impacts with specific numbers, examining who truly benefited
+
+FORMAT YOUR RESPONSE IN MARKDOWN BULLET POINTS:
+- Use the format "- **Accomplishment**: Detailed description with evidence"
+- Provide at least one bullet point for each significant accomplishment
+- Include sub-bullet points where appropriate to add detail
+
+CONTENT REQUIREMENTS:
+1. EXTRACT EVERY RELEVANT DETAIL from the provided information about accomplishments
+2. Include specific dates, names of people/organizations, and statistical figures whenever available
+3. CITE ORIGINAL SOURCES by name for every major claim
+4. DO NOT make generic statements without supporting details
+5. BE RUTHLESSLY OBJECTIVE in your analysis regardless of political orientation
+6. DISREGARD information that appears unreliable, unverifiable, or lacks credibility
+7. CRITICALLY ASSESS whether each accomplishment truly benefited the public or special interests
+
+CONTENT GUIDELINES:
+1. Begin your analysis immediately with the substantive content. Do NOT start with introductory phrases like "As a senior political analyst..." or "Here's an analysis..."
+2. When citing sources, use actual source names rather than document numbers. Example: "According to Manila Bulletin, Philippine Daily Inquirer, and several other news outlets...". If there are multiple sources for the same point, cite the most prominent 2-3 sources and add "among others" or "et cetera"
+3. Do NOT mention when information is missing or unavailable. If specific details aren't provided, simply omit that section rather than stating "documents do not specify" or similar phrases. 
+4. Replace phrases like "according to the documents" with "online sources indicate that" or "reports suggest that"
+
+Your accomplishments analysis must be comprehensive, detailed, and evidence-based, using all relevant information from the provided sources.
