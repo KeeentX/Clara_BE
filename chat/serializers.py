@@ -9,9 +9,8 @@ class QandASerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
 class ChatSerializer(serializers.ModelSerializer):
-    qanda_set = QandASerializer(many=True, read_only=True)
-    
+
     class Meta:
         model = Chat
-        fields = ['id', 'politician', 'user', 'created_at', 'research_report', 'qanda_set']
-        read_only_fields = ['id', 'created_at', 'user']
+        fields = ['id', 'politician', 'user', 'created_at', 'updated_at', 'research_report']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'user']

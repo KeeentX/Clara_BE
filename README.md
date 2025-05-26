@@ -65,8 +65,18 @@ run_clara.bat
 ### Chat Endpoints
 - `/api/chat/chats/` - Create a new chat (POST) or get all chats for authenticated user (GET)
 - `/api/chat/chats/<chat_id>/` - Delete a specific chat (DELETE)
+- `/api/chat/chats/<chat_id>/qanda/` - Get all QandA sets for a specific chat (GET)
 - `/api/chat/temporary-chats/<chat_id>/` - Get a temporary chat by ID (GET)
-- `/api/chat/questions/` - Create a new question and get an answer (POST)
+- `/api/chat/questions/` - Create a new question and get an answer (POST, requires authentication)
+
+## Management Commands
+
+### Remove Old Temporary Chats
+To remove temporary chats that are older than 24 hours:
+```sh
+python manage.py remove_old_chats
+```
+This command can be scheduled to run daily using a cron job or Windows Task Scheduler.
 
 ## Notes
 - Make sure to keep your `.env` file secure and never commit it to version control.
