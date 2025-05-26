@@ -136,6 +136,29 @@ All endpoints use JWT authentication where required. Obtain tokens via the login
 
 ---
 
+### 4. Generate Anonymous Token
+- **URL:** `/auth/token/anonymous/`
+- **Method:** GET
+- **Authentication:** None
+- **Description:** Generate a temporary anonymous token with 24-hour expiration for initial visits.
+
+#### Request Body
+No request body needed.
+
+#### Success Response
+- **Code:** 200 OK
+- **Content:**
+```
+{
+  "message": "Temporary anonymous token generated successfully",
+  "tokens": {
+    "access": "string"
+  }
+}
+```
+
+---
+
 # Research API Endpoint Details
 
 ## `/api/research/<name>/` (GET, POST)
@@ -348,7 +371,7 @@ Research a politician by name. Returns cached research if available and recent, 
 ## 5. Create Question and Answer
 - **URL:** `/api/chat/questions/`
 - **Method:** POST
-- **Authentication:** None
+- **Authentication:** JWT Token Required
 - **Description:** Create a new question and get an answer for a specific chat.
 
 ### Request Body (JSON)
