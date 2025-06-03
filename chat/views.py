@@ -115,7 +115,7 @@ class TemporaryChatView(APIView):
 
 class ChatDetailView(APIView):
     """
-    API endpoint for retrieving, updating, and deleting a specific chat.
+    API endpoint for retrieving and deleting a specific chat.
     """
     authentication_classes = [JWTAuthentication]
     permission_classes = [AllowAny]  # Allow both authenticated and unauthenticated users

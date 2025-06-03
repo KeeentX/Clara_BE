@@ -171,10 +171,17 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # get from env
-load_dotenv()
-GEMINI_API_Key = os.environ.get("GEMINI_API_KEY")
+# load_dotenv()
 
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
+
+
+dotenv_path = r"C:\Users\kenzj\Desktop\Clara\Clara_BE\.env"
+
+load_dotenv(dotenv_path)
+GEMINI_API_Key = os.environ.get("GEMINI_API_KEY")
+
+#print("GEMINI_API_KEY:", os.getenv("GEMINI_API_KEY"))
