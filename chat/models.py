@@ -20,7 +20,7 @@ class Chat(models.Model):
             models.Index(fields=['-created_at']),
             models.Index(fields=['user', '-created_at']),
         ]
-        ordering = ['-created_at']
+        ordering = ['created_at']
 
     def __str__(self):
         user_str = self.user.username if self.user else "Anonymous"

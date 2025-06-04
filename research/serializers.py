@@ -19,7 +19,7 @@ class PoliticianSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Politician
-        fields = ['id', 'name', 'image_url', 'created_at', 'latest_research']
+        fields = ['id', 'name', 'image_url', 'party', 'bio', 'created_at', 'latest_research']
     
     def get_latest_research(self, obj):
         """Get the latest research for this politician"""

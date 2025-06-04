@@ -80,8 +80,8 @@ class ChatView(APIView):
         limit = int(request.query_params.get('limit', 10))
         offset = int(request.query_params.get('offset', 0))
 
-        # Get chats for the authenticated user with limit and offset
-        chats = Chat.objects.filter(user=request.user)[offset:offset+limit]
+        # Get chats for the authenticated user with limit and offset, ordered chronologically
+        chats = Chat.objects.filter(user=request.user).order_by('created_at')[offset:offset+limit]
 
         serializer = ChatSerializer(chats, many=True)
         return Response(serializer.data)

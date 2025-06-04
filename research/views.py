@@ -177,6 +177,9 @@ def get_research_report(request, report_id):
         serializer = ResearchResultSerializer(research_report)
         response_data = serializer.data
         
+        # Explicitly add politician_id to the response
+        response_data['politician_id'] = research_report.politician.id if research_report.politician else None
+        
         # Process response according to parameters
         if include_sources and 'sources' in response_data:
             # Filter out problematic sources with corrupt content
@@ -215,4 +218,87 @@ def get_research_report(request, report_id):
         return Response({
             'success': False,
             'error': f"An unexpected error occurred: {str(e)}",
+        }, status=500)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_view(['GET'])
+def get_politicians(request):
+    """
+    API endpoint to retrieve all politicians or filter by name.
+    
+    Query parameters:
+    - name: Filter politicians by name (optional, case-insensitive partial match)
+    - limit: Maximum number of politicians to return (optional, default: 20)
+    - offset: Number of politicians to skip (optional, default: 0)
+    """
+    logger.info("Request for all politicians")
+    
+    # Get query parameters
+    name_filter = request.GET.get('name', '')
+    limit = int(request.GET.get('limit', 20))
+    offset = int(request.GET.get('offset', 0))
+    
+    try:
+        # Query the database
+        query = Politician.objects.all()
+        
+        # Apply name filter if provided
+        if name_filter:
+            query = query.filter(name__icontains=name_filter)
+            
+        # Get total count before pagination
+        total_count = query.count()
+        
+        # Apply pagination
+        query = query.order_by('name')[offset:offset+limit]
+        
+        # Serialize the results
+        serializer = PoliticianSerializer(query, many=True)
+        
+        return Response({
+            'success': True,
+            'count': total_count,
+            'results': serializer.data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving politicians: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': f"An unexpected error occurred: {str(e)}"
+        }, status=500)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_view(['GET'])
+def get_politician(request, politician_id):
+    """
+    API endpoint to retrieve a specific politician by ID.
+    """
+    logger.info(f"Request for politician with ID: {politician_id}")
+    
+    try:
+        # Try to find the politician in the database
+        politician = Politician.objects.get(id=politician_id)
+        
+        # Serialize the politician
+        serializer = PoliticianSerializer(politician)
+        
+        return Response({
+            'success': True,
+            'data': serializer.data
+        })
+        
+    except Politician.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': 'Politician not found'
+        }, status=404)
+        
+    except Exception as e:
+        logger.error(f"Error retrieving politician: {str(e)}", exc_info=True)
+        return Response({
+            'success': False,
+            'error': f"An unexpected error occurred: {str(e)}"
         }, status=500)
