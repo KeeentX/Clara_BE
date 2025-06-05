@@ -79,9 +79,15 @@ class ChatView(APIView):
         # Get limit and offset from query parameters, with defaults
         limit = int(request.query_params.get('limit', 10))
         offset = int(request.query_params.get('offset', 0))
-
-        # Get chats for the authenticated user with limit and offset, ordered chronologically
-        chats = Chat.objects.filter(user=request.user).order_by('created_at')[offset:offset+limit]
+                
+        # Get chats for the authenticated user with limit and offset
+        chats = Chat.objects.filter(user=request.user)
+        
+        # Apply sorting based on parameter
+        chats = chats.order_by('-created_at')
+        
+        # Apply pagination
+        chats = chats[offset:offset+limit]
 
         serializer = ChatSerializer(chats, many=True)
         return Response(serializer.data)
@@ -260,8 +266,8 @@ class ChatQandAView(APIView):
             # Check if the chat exists and belongs to the authenticated user
             chat = Chat.objects.get(id=chat_id, user=request.user)
 
-            # Get QandA sets for the chat with limit and offset
-            qanda_sets = QandA.objects.filter(chat=chat)[offset:offset+limit]
+            # Get QandA sets for the chat with limit and offset in descending order
+            qanda_sets = QandA.objects.filter(chat=chat).order_by('created_at')[offset:offset+limit]
 
             serializer = QandASerializer(qanda_sets, many=True)
             return Response(serializer.data)
