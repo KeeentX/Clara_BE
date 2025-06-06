@@ -172,8 +172,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # get from env
 load_dotenv()
-GEMINI_API_Key = os.environ.get("GEMINI_API_KEY")
-
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY_2")
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

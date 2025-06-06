@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from rest_framework.validators import UniqueValidator
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .models import PoliticianPicks
+from research.models import Politician
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
@@ -59,4 +61,16 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['first_name'] = self.user.first_name
         data['last_name'] = self.user.last_name
         return data
+
+class PoliticianSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Politician
+        fields = ['id', 'name']  # Adjust fields based on your Politician model
+
+class PoliticianPicksSerializer(serializers.ModelSerializer):
+    politicians = PoliticianSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = PoliticianPicks
+        fields = ['politicians']
 

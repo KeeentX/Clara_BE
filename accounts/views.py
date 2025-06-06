@@ -1,11 +1,15 @@
 from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
-from .serializers import RegisterSerializer, LoginSerializer
+from django.shortcuts import get_object_or_404
+from .models import PoliticianPicks
+from research.models import Politician
+from .serializers import RegisterSerializer, LoginSerializer, PoliticianPicksSerializer
 from datetime import timedelta
 
 class RegisterView(APIView):
@@ -90,3 +94,54 @@ class AnonymousTokenView(APIView):
                 'access': str(refresh.access_token),
             }
         }, status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_politician(request, politician_id):
+    """Add a politician to the user's picks"""
+    politician = get_object_or_404(Politician, pk=politician_id)
+    
+    # Get or create politician picks for the user
+    picks, created = PoliticianPicks.objects.get_or_create(user=request.user)
+    
+    # Add the politician to user's picks
+    picks.politicians.add(politician)
+    
+    serializer = PoliticianPicksSerializer(picks)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def remove_politician(request, politician_id):
+    """Remove a politician from the user's picks"""
+    politician = get_object_or_404(Politician, pk=politician_id)
+    
+    try:
+        picks = PoliticianPicks.objects.get(user=request.user)
+        picks.politicians.remove(politician)
+        
+        serializer = PoliticianPicksSerializer(picks)
+        return Response(serializer.data)
+    except PoliticianPicks.DoesNotExist:
+        return Response(
+            {"detail": "No politician picks found for this user."}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_picks(request, user_id=None):
+    """Get politician picks for a user"""
+    if user_id and user_id != request.user.id:
+        # Only allow viewing other users' picks if needed
+        # You might want to add additional permission checks here
+        user = get_object_or_404(User, pk=user_id)
+    else:
+        user = request.user
+    
+    try:
+        picks = PoliticianPicks.objects.get(user=user)
+        serializer = PoliticianPicksSerializer(picks)
+        return Response(serializer.data)
+    except PoliticianPicks.DoesNotExist:
+        return Response({"politicians": []})
